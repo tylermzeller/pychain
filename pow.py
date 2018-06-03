@@ -15,7 +15,7 @@ class ProofOfWork(object):
         b = self.block
         data = b''.join([
             b.prevHash,
-            b.data,
+            b.hashTransactions(),
             util.int64ToBytes(b.timestamp),
             util.int64ToBytes(targetBits),
             util.int64ToBytes(nonce)
@@ -24,7 +24,6 @@ class ProofOfWork(object):
 
     def run(self):
         nonce = 0
-        print("Mining the block containing \"%s\"" % self.block.data.decode())
         powHash = b''
         while nonce < maxInt64:
             data = self.prepareData(nonce)

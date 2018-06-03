@@ -10,4 +10,7 @@ Learning about blockchains from [Jeiwan](https://github.com/Jeiwan/blockchain_go
 ## TODO
   * Transactions
   * Addresses
+  * Block mining
+    - Mining Rewards
+    - Transaction Mempool
   * Networking
