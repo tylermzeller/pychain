@@ -1,5 +1,4 @@
 import util
-import struct
 from hashlib import sha256
 
 targetBits = 24

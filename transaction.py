@@ -1,16 +1,14 @@
-import pickle
+from pickle import dumps
 from hashlib import sha256
+
 subsidy = 50
 
 class Transaction(object):
     def __init__(self, vin, vout):
         self.vin = vin
         self.vout = vout
-        self.setId()
-
-    def setId(self):
         hash = sha256()
-        hash.update(pickle.dumps(self))
+        hash.update(dumps(self))
         self.id = hash.digest()
 
     def isCoinbase(self):

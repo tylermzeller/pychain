@@ -1,5 +1,6 @@
 from binascii import unhexlify
 from util import intToBytes
+
 alphabet = b'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 def encode(payload):

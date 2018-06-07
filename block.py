@@ -1,13 +1,13 @@
-import time
-import struct
 import pow
+
+from time import time
 from hashlib import sha256
 
 class Block(object):
     def __init__(self, transactions, prevHash):
         self.transactions = transactions
         self.prevHash = prevHash
-        self.timestamp = int(time.time())
+        self.timestamp = int(time())
 
         proof = pow.ProofOfWork(self)
         self.nonce, self.hash = proof.run()
