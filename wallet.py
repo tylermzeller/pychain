@@ -1,3 +1,5 @@
+import base58
+
 from ecdsa import SigningKey, SECP256k1
 import hashlib
 
@@ -32,8 +34,7 @@ class Wallet(object):
         pubKeyHash = hashPubKey(self.publickey)
         versionedPayload = VERSION + pubKeyHash
         fullPayload = versionedPayload + checksum(versionedPayload)
-        return base58Encode(fullPayload)
-
+        return base58.encode(fullPayload)
 
 def newWallet():
     return Wallet(*newKeyPair())
