@@ -1,8 +1,10 @@
 import base58
+from transaction_input import TXInput
+from transaction_output import TXOuput
+from util import sha256
 from wallet import hashPubKey
 
 from pickle import dumps
-from hashlib import sha256
 
 subsidy = 50
 
@@ -15,9 +17,9 @@ class Transaction(object):
     # TODO, match hash from github
     def setId(self, id=None):
         if not id:
-            hash = sha256()
-            hash.update(dumps(self))
-            id = hash.digest()
+            # We want an empty id when we hash this tx
+            self.id = b''
+            id = sha256(dumps(self))
 
         self.id = id
 
@@ -83,29 +85,6 @@ class Transaction(object):
 
         # Didn't find any invalid txs
         return True
-
-class TXOutput(object):
-    def __init__(self, value, pubKeyHash=None):
-        self.value = value
-        self.pubKeyHash = pubKeyHash
-
-    def Lock(self, address):
-        self.pubKeyHash = base58.decode(address)[1:-4]
-
-    def isLockedWithKey(self, pubKeyHash):
-        return self.pubKeyHash == pubKeyHash
-
-class TXInput(object):
-    def __init__(self, txId, vout, signature=None, pubKey=None):
-        self.txId = txId # ID of the transaction whose output is referenced by this input
-        self.vout = vout # TODO: change this name. This is an int, not list of TXOutput objects
-        self.signature = signature
-        self.pubKey = pubKey
-
-    def UsesKey(self, pubKeyHash):
-        lockingHash = hashPubKey(self.pubKey)
-        return lockingHash == pubKeyHash
-
 
 # Returns a Transaction instance
 def newCoinbaseTX(to, data):
