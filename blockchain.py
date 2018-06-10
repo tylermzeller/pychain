@@ -24,6 +24,12 @@ class Blockchain(object):
         self.db = db
 
     def mineBlock(self, transactions):
+        for tx in transactions:
+            if not self.verifyTransaction(tx):
+                print("Error verifying transactions")
+                print(tx)
+                return
+                
         lastHash = self.db['l']
         newBlock = block.Block(transactions, lastHash)
         self.db[newBlock.hash.hex()] = newBlock
@@ -33,15 +39,23 @@ class Blockchain(object):
     def iterator(self):
         return BlockchainIterator(self.tip, self.db)
 
-    def findUnspentTransactions(self, address):
+    def iter_blocks(self):
+        chainIterator = self.iterator()
+        while chainIterator.hasNext():
+            yield chainIterator.next()
+
+    def findTransaction(self, id):
+        for block in self.iter_blocks():
+            for tx in block.transactions:
+                if tx.id == id: return tx
+        return None
+
+    def findUnspentTransactions(self, pubKeyHash):
         unspentTXs = []
         spentTXOs = {}
-        chainIterator = self.iterator()
 
-        # for each block
-        while chainIterator.hasNext():
-            block = chainIterator.next()
-
+        # for each block in the chain
+        for block in self.iter_blocks():
             # for each tx in the block
             for tx in block.transactions:
                 # for each output in the tx
@@ -53,21 +67,22 @@ class Blockchain(object):
                         continue
 
                     # the output was not spent
-                    if txOutput.canBeUnlockedWith(address):
+                    if txOutput.isLockedWithKey(pubKeyHash):
                         unspentTXs.append(tx)
 
                 if not tx.isCoinbase():
                     # for each input in the tx
                     for txInput in tx.vin:
                         # check if input references outputs with this address
-                        if txInput.canUnlockOutputWith(address):
+                        if txInput.usesKey(pubKeyHash):
                             if not txInput.txId in spentTXOs:
                                 spentTXOs[txInput.txId] = []
                             spentTXOs[txInput.txId].append(txInput.vout)
         return unspentTXs
-    def findUTXO(self, address):
-        UTXs = self.findUnspentTransactions(address)
-        return [out for tx in UTXs for out in tx.vout if out.canBeUnlockedWith(address)]
+
+    def findUTXO(self, pubKeyHash):
+        UTXs = self.findUnspentTransactions(pubKeyHash)
+        return [out for tx in UTXs for out in tx.vout if out.isLockedWithKey(pubKeyHash)]
 
     def findSpendableOutputs(self, address, amount):
         UTXOs = {}
@@ -88,6 +103,24 @@ class Blockchain(object):
             if accumulated >= amount:
                 break
         return accumulated, UTXOs
+
+    def signTransaction(self, tx, privKey):
+        prevTXs = {}
+
+        for vin in tx.vin:
+            prevTX = self.findTransaction(vin.txId)
+            prevTXs[prevTX.hex()] = prevTX
+
+        tx.sign(privKey, prevTXs)
+
+    def verifyTransaction(tx):
+        prevTXs = {}
+
+        for vin in tx.vin:
+            prevTX = self.findTransaction(vin.txId)
+            prevTXs[prevTX.hex()] = prevTX
+
+        return tx.verify(prevTXs)
 
 def newBlockchain(address):
     tip = None

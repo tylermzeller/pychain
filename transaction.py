@@ -1,27 +1,25 @@
 import base58
+import wallet
 from transaction_input import TXInput
 from transaction_output import TXOuput
 from util import sha256
-from wallet import hashPubKey
 
 from pickle import dumps
 
 subsidy = 50
 
 class Transaction(object):
-    def __init__(self, id, vin, vout):
+    def __init__(self, vin=[], vout=[], id=b''):
         self.vin = vin
         self.vout = vout
-        self.setId(id)
+        self.id = id
 
     # TODO, match hash from github
-    def setId(self, id=None):
-        if not id:
-            # We want an empty id when we hash this tx
-            self.id = b''
-            id = sha256(dumps(self))
+    def setId(self):
+        # We want an empty id when we hash this tx
+        self.id = b''
+        id = sha256(dumps(self))
 
-        self.id = id
 
     def isCoinbase(self):
         return len(self.vin) == 1 and len(self.vin[0].txId) == 0 and self.vin[0].vout == -1
@@ -31,7 +29,7 @@ class Transaction(object):
         inputs =  [TXInput(txIn.txId, txIn.vout) for txIn in self.vin]
         outputs = [TXOutput(txOut.value, txOut.pubKeyHash) for txOut in self.vout]
 
-        return Transaction(self.id, inputs, outputs)
+        return Transaction(inputs, outputs, self.id)
 
     def sign(self, privKey, prevTxs):
         # Coinbase transactions have no inputs to sign
@@ -86,29 +84,39 @@ class Transaction(object):
         # Didn't find any invalid txs
         return True
 
+def newTX(vin, vout):
+    tx = Transaction(vin, vout)
+    tx.setId()
+    return tx
 # Returns a Transaction instance
 def newCoinbaseTX(to, data):
     if data == "":
         data = "Reward to %s" % to
 
-    txin = TXInput(b'', -1, data)
+    txin = TXInput(b'', -1, pubKey=data)
     txout = TXOutput(subsidy, to)
 
-    return Transaction([txin], [txout])
+    return newTX([txin], [txout])
 
 def newUTXOTransaction(frum, to, amount, chain):
     inputs = []
     outputs = []
 
-    acc, validOutputs = chain.findSpendableOutputs(frum, amount)
+    #acc, validOutputs = chain.findSpendableOutputs(frum, amount)
+    w = wallet.getWallet(frum)
+    pubKeyHash = wallet.hashPubKey(w.publicKey)
+    acc, validOutputs = chain.findSpendableOutputs(pubKeyHash, amount)
 
     if acc < amount:
         print('Not enough funds!')
         return None
 
-    inputs = [TXInput(txId, outIdx, frum) for txId in validOutputs for outIdx in validOutputs[txId]]
+    inputs = [TXInput(txId, outIdx, pubKey=w.publicKey) for txId in validOutputs for outIdx in validOutputs[txId]]
     outputs = [TXOutput(amount, to)]
     if acc > amount:
         outputs.append(TXOutput(acc - amount, frum))
 
-    return Transaction(inputs, outputs)
+    tx = newTX(intputs, outputs)
+    chain.signTransaction(tx, wallet)
+
+    return newTX(inputs, outputs)

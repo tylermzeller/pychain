@@ -21,10 +21,7 @@ def listAddresses():
 
 def printChain():
     bc = blockchain.newBlockchain("")
-    chainIterator = bc.iterator()
-
-    while chainIterator.hasNext():
-        block = chainIterator.next()
+    for block in bc.iter_blocks():
         proof = pow.ProofOfWork(block)
 
         print('******* Block %s *******' % block.hash.hex())
