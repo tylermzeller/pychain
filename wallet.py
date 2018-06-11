@@ -1,10 +1,14 @@
 import base58
 from util import sha256, ripemd160
 
+import shelve
 from ecdsa import SigningKey, SECP256k1
 
 addressChecksumLength = 4
+walletFile = 'wallet.db'
 VERSION = b'\x00'
+
+wallets = {}
 
 def newKeyPair():
     priv = SigningKey.generate(curve=SECP256k1)
@@ -16,6 +20,13 @@ def hashPubKey(publicKey):
 
 def checksum(payload):
     return sha256(sha256(payload))[:addressChecksumLength]
+
+def validateAddress(address):
+    pubKeyHash = base58.decode(address.encode())
+    chksum = pubKeyHash[-4:]
+    version = pubKeyHash[0]
+    pubKeyHash = pubKeyHash[1:-4]
+    return checksum(version + pubKeyHash) == chksum
 
 class Wallet(object):
     def __init__(self, privKey, pubKey):

@@ -4,18 +4,22 @@ import blockchain
 import pow
 import transaction
 import wallet
+from wallet_manager import WalletManager
 import base58
 
 def createWallet():
-    w = wallet.newWallet()
-    w.save()
+    wm = WalletManager()
+    w = wm.createWallet()
+    wm.db.close()
     print("New address: %s" % w.getAddress())
 
 def listAddresses():
-    addresses = wallet.getSavedAddresses()
-    if not getAddresses:
+    wm = WalletManager()
+    addresses = wm.getAddresses()
+    if not addresses:
         print("Error: Could not get wallets")
         return
+    wm.db.close()
     for address in addresses:
         print(address)
 

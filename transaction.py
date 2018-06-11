@@ -1,5 +1,6 @@
 import base58
 import wallet
+from wallet_manager import WalletManager
 from transaction_input import TXInput
 from transaction_output import TXOuput
 from util import sha256
