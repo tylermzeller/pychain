@@ -29,7 +29,7 @@ class Blockchain(object):
                 print("Error verifying transactions")
                 print(tx)
                 return
-                
+
         lastHash = self.db['l']
         newBlock = block.Block(transactions, lastHash)
         self.db[newBlock.hash.hex()] = newBlock
@@ -104,6 +104,7 @@ class Blockchain(object):
                 break
         return accumulated, UTXOs
 
+    # TODO: Remove this and make a function called getPrevTransactions
     def signTransaction(self, tx, privKey):
         prevTXs = {}
 
@@ -113,6 +114,7 @@ class Blockchain(object):
 
         tx.sign(privKey, prevTXs)
 
+    # TODO: Remove this and make a function called getPrevTransactions
     def verifyTransaction(tx):
         prevTXs = {}
 

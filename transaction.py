@@ -1,5 +1,5 @@
 import base58
-import wallet
+from wallet import hashPubKey
 from wallet_manager import WalletManager
 from transaction_input import TXInput
 from transaction_output import TXOuput
@@ -13,7 +13,10 @@ class Transaction(object):
     def __init__(self, vin=[], vout=[], id=b''):
         self.vin = vin
         self.vout = vout
-        self.id = id
+        if id:
+            self.id = id
+        else:
+            self.setId()
 
     # TODO, match hash from github
     def setId(self):
@@ -28,7 +31,7 @@ class Transaction(object):
     def trimmedCopy(self):
         # Don't populate signature or pubKey for inputs
         inputs =  [TXInput(txIn.txId, txIn.vout) for txIn in self.vin]
-        outputs = [TXOutput(txOut.value, txOut.pubKeyHash) for txOut in self.vout]
+        outputs = [TXOutput(txOut.value, pubKeyHash=txOut.pubKeyHash) for txOut in self.vout]
 
         return Transaction(inputs, outputs, self.id)
 
@@ -89,23 +92,25 @@ def newTX(vin, vout):
     tx = Transaction(vin, vout)
     tx.setId()
     return tx
+
 # Returns a Transaction instance
 def newCoinbaseTX(to, data):
     if data == "":
         data = "Reward to %s" % to
 
-    txin = TXInput(b'', -1, pubKey=data)
-    txout = TXOutput(subsidy, to)
+    txin = TXInput(pubKey=data)
+    txout = TXOutput(subsidy, address=to)
 
-    return newTX([txin], [txout])
+    return Transaction([txin], [txout])
 
 def newUTXOTransaction(frum, to, amount, chain):
     inputs = []
     outputs = []
 
     #acc, validOutputs = chain.findSpendableOutputs(frum, amount)
-    w = wallet.getWallet(frum)
-    pubKeyHash = wallet.hashPubKey(w.publicKey)
+    wm = WalletManager()
+    w = wm.getWallet(frum)
+    pubKeyHash = hashPubKey(w.publicKey)
     acc, validOutputs = chain.findSpendableOutputs(pubKeyHash, amount)
 
     if acc < amount:
@@ -113,11 +118,11 @@ def newUTXOTransaction(frum, to, amount, chain):
         return None
 
     inputs = [TXInput(txId, outIdx, pubKey=w.publicKey) for txId in validOutputs for outIdx in validOutputs[txId]]
-    outputs = [TXOutput(amount, to)]
+    outputs = [TXOutput(amount, address=to)]
     if acc > amount:
-        outputs.append(TXOutput(acc - amount, frum))
+        outputs.append(TXOutput(acc - amount, address=frum))
 
-    tx = newTX(intputs, outputs)
-    chain.signTransaction(tx, wallet)
+    tx = Transaction(intputs, outputs)
+    chain.signTransaction(tx, w)
 
-    return newTX(inputs, outputs)
+    return tx
