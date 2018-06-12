@@ -104,13 +104,11 @@ def newCoinbaseTX(to, data):
     return Transaction([txin], [txout])
 
 def newUTXOTransaction(frum, to, amount, chain):
-    inputs = []
-    outputs = []
-
-    #acc, validOutputs = chain.findSpendableOutputs(frum, amount)
     wm = WalletManager()
     w = wm.getWallet(frum)
     pubKeyHash = hashPubKey(w.publicKey)
+    # TODO: would it be better to return the actual output object as well?
+    # This would negate the need to call getPrevTransactions() below.
     acc, validOutputs = chain.findSpendableOutputs(pubKeyHash, amount)
 
     if acc < amount:
@@ -122,7 +120,8 @@ def newUTXOTransaction(frum, to, amount, chain):
     if acc > amount:
         outputs.append(TXOutput(acc - amount, address=frum))
 
-    tx = Transaction(intputs, outputs)
-    chain.signTransaction(tx, w)
+    tx = Transaction(inputs, outputs)
+    prevTXs = chain.getPrevTransactions(tx)
+    tx.sign(w.privateKey, prevTXs)
 
     return tx

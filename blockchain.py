@@ -25,7 +25,8 @@ class Blockchain(object):
 
     def mineBlock(self, transactions):
         for tx in transactions:
-            if not self.verifyTransaction(tx):
+            prevTXs = self.getPrevTransactions(tx)
+            if not tx.verify(prevTXs):
                 print("Error verifying transactions")
                 print(tx)
                 return
@@ -84,14 +85,14 @@ class Blockchain(object):
         UTXs = self.findUnspentTransactions(pubKeyHash)
         return [out for tx in UTXs for out in tx.vout if out.isLockedWithKey(pubKeyHash)]
 
-    def findSpendableOutputs(self, address, amount):
+    def findSpendableOutputs(self, pubKeyHash, amount):
         UTXOs = {}
-        UTXs = self.findUnspentTransactions(address)
+        UTXs = self.findUnspentTransactions(pubKeyHash)
         accumulated = 0
 
         for tx in UTXs:
             for outIdx, txOutput in enumerate(tx.vout):
-                if txOutput.canBeUnlockedWith(address) and accumulated < amount:
+                if txOutput.isLockedWithKey(pubKeyHash) and accumulated < amount:
                     accumulated += txOutput.value
                     if not tx.id in UTXOs:
                         UTXOs[tx.id] = []
@@ -104,25 +105,16 @@ class Blockchain(object):
                 break
         return accumulated, UTXOs
 
-    # TODO: Remove this and make a function called getPrevTransactions
-    def signTransaction(self, tx, privKey):
+    # Get's a hash table of transactions referenced by the inputs
+    # hashed by the previous transactions' IDs
+    def getPrevTransactions(self, tx):
         prevTXs = {}
 
         for vin in tx.vin:
             prevTX = self.findTransaction(vin.txId)
-            prevTXs[prevTX.hex()] = prevTX
+            prevTXs[prevTX.id.hex()] = prevTX
 
-        tx.sign(privKey, prevTXs)
-
-    # TODO: Remove this and make a function called getPrevTransactions
-    def verifyTransaction(tx):
-        prevTXs = {}
-
-        for vin in tx.vin:
-            prevTX = self.findTransaction(vin.txId)
-            prevTXs[prevTX.hex()] = prevTX
-
-        return tx.verify(prevTXs)
+        return prevTXs
 
 def newBlockchain(address):
     tip = None
