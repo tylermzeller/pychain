@@ -14,3 +14,33 @@ Learning about blockchains from [Jeiwan](https://github.com/Jeiwan/blockchain_go
     - Mining Rewards
     - Transaction Mempool
   * Networking
+
+## Quick Start
+
+### Creating wallets
+Command: `cw` or `createwallet`
+```bash
+$ python gucci_main.py cw
+New address: 1BRRYXYbCMxZ3sJAZjKYkFiTkLjRus51wY
+$ python gucci_main.py cw
+New address: 12JShnTCMeqib8ezHcdPotTSxaSwJqauMn
+```
+
+### Creating a Blockchain
+#### Command:
+`nbc`, `newchain`, or `newblockchain`
+```bash
+$ python gucci_main.py nbc --address 1BRRYXYbCMxZ3sJAZjKYkFiTkLjRus51wY
+
+Done
+```
+
+### Printing the Blockchain
+#### Command:
+`print`, `newchain`, or `newblockchain`
+```bash
+$ python gucci_main.py print
+******* Block 000000f9acec4af7e34e14450f3077c2491bab5a2c4c674341a939e29f350f76 *******
+Prev. Hash:   0000000000000000000000000000000000000000000000000000000000000000
+PoW:          True
+```
