@@ -1,5 +1,5 @@
 import base58
-from util import sha256, ripemd160
+from util import sha256, ripemd160, intToBytes
 
 import shelve
 from ecdsa import SigningKey, SECP256k1
@@ -16,15 +16,15 @@ def newKeyPair():
     return priv, pub
 
 def hashPubKey(publicKey):
-    return ripemd160(sha256(publicKey.to_string))
+    return ripemd160(sha256(publicKey.to_string()))
 
 def checksum(payload):
     return sha256(sha256(payload))[:addressChecksumLength]
 
 def validateAddress(address):
-    pubKeyHash = base58.decode(address.encode())
+    pubKeyHash = base58.decode(address)
     chksum = pubKeyHash[-4:]
-    version = pubKeyHash[0]
+    version = intToBytes(pubKeyHash[0])
     pubKeyHash = pubKeyHash[1:-4]
     return checksum(version + pubKeyHash) == chksum
 

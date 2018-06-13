@@ -2,7 +2,7 @@ import base58
 from wallet import hashPubKey
 from wallet_manager import WalletManager
 from transaction_input import TXInput
-from transaction_output import TXOuput
+from transaction_output import TXOutput
 from util import sha256
 
 from pickle import dumps

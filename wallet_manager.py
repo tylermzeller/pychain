@@ -1,3 +1,5 @@
+from util import to_str
+
 import wallet
 import time
 import shelve
@@ -11,14 +13,15 @@ class WalletManager:
 
         def createWallet(self):
             w = wallet.newWallet()
-            self.db[w.getAddress()] = w
+            address = to_str(w.getAddress())
+            self.db[address] = w
             return w
 
         def getAddresses(self):
             return [address for address in self.db]
 
         def getWallet(self, address):
-            return self.db[address]
+            return self.db[to_str(address)]
 
     instance = None
     def __init__(self):

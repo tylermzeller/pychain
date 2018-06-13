@@ -1,3 +1,5 @@
+import base58
+
 class TXOutput(object):
     def __init__(self, value, address=None, pubKeyHash=None):
         self.value = value

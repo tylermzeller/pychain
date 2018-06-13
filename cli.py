@@ -1,5 +1,4 @@
-import argparse
-
+from util import to_str
 import blockchain
 import pow
 import transaction
@@ -7,11 +6,13 @@ import wallet
 from wallet_manager import WalletManager
 import base58
 
+import argparse
+
 def createWallet():
     wm = WalletManager()
     w = wm.createWallet()
     wm.db.close()
-    print("New address: %s" % w.getAddress())
+    print("New address: %s" % to_str(w.getAddress()))
 
 def listAddresses():
     wm = WalletManager()
@@ -24,7 +25,7 @@ def listAddresses():
         print(address)
 
 def printChain():
-    bc = blockchain.newBlockchain("")
+    bc = blockchain.newBlockchain(b'')
     for block in bc.iter_blocks():
         proof = pow.ProofOfWork(block)
 
@@ -38,36 +39,36 @@ def printChain():
     bc.db.close()
 
 def newBlockchain(address):
-    if not wallet.validateAddress(address):
+    if not wallet.validateAddress(address.encode()):
         print("Error: Address is not valid")
         return
 
-    bc = blockchain.newBlockchain(address)
+    bc = blockchain.newBlockchain(address.encode())
     bc.db.close()
     print("Done")
 
 def getBalance(address):
-    if not wallet.validateAddress(address):
+    if not wallet.validateAddress(address.encode()):
         print("Error: Address is not valid")
         return
 
-    bc = blockchain.newBlockchain(address)
+    bc = blockchain.newBlockchain(address.encode())
     pubKeyHash = base58.decode(address.encode())[1:-4]
     balance = sum([out.value for out in bc.findUTXO(pubKeyHash)])
     bc.db.close()
     print("Balance of '%s': %d" % (address, balance))
 
 def send(frum, to, amount):
-    if not wallet.validateAddress(frum):
+    if not wallet.validateAddress(frum.encode()):
         print("Error: Sender address is not valid")
         return
 
-    if not wallet.validateAddress(to):
+    if not wallet.validateAddress(to.encode()):
         print("Error: Recipient address is not valid")
         return
 
-    bc = blockchain.newBlockchain(frum)
-    tx = transaction.newUTXOTransaction(frum, to, amount, bc)
+    bc = blockchain.newBlockchain(frum.encode())
+    tx = transaction.newUTXOTransaction(frum.encode(), to.encode(), amount, bc)
     if tx:
         bc.mineBlock([tx])
         print("Success!")

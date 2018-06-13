@@ -18,3 +18,7 @@ def ripemd160(data):
 def hashData(hashObj, data):
     hashObj.update(data)
     return hashObj.digest()
+
+# prefer to_s(bytes) than bytes.decode() for readability
+def to_str(bytesString):
+    return bytesString.decode()
