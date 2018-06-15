@@ -41,7 +41,7 @@ class UTXOSet:
 
             for txId in self.db:
                 for txOutput in self.db[txId]:
-                    if txOutput.isLockedWithKey(pubKeyHash) && accumulated < amount:
+                    if txOutput.isLockedWithKey(pubKeyHash) and accumulated < amount:
                         accumulated += txOutput.value
                         if txId not in unspentOutIndices:
                             unspentOutIndices[txId] = []

@@ -10,9 +10,7 @@ Learning about blockchains from [Jeiwan](https://github.com/Jeiwan/blockchain_go
 
 
 ## TODO
-  * Block mining
-    - Mining Rewards
-    - Transaction Mempool
+  * Transaction Mempool
   * Networking
 
 ## Quick Start
@@ -37,7 +35,7 @@ Done
 
 ### Printing the Blockchain
 #### Command:
-`print`, `newchain`, or `newblockchain`
+`p`, `print`, `log`, `show`, `display`
 ```bash
 $ python gucci_main.py print
 ******* Block 000000f9acec4af7e34e14450f3077c2491bab5a2c4c674341a939e29f350f76 *******
