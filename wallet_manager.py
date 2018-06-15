@@ -23,6 +23,9 @@ class WalletManager:
         def getWallet(self, address):
             return self.db[to_str(address)]
 
+        def closeDB(self):
+            self.db.close()
+
     instance = None
     def __init__(self):
         if not WalletManager.instance:

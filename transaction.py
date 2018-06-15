@@ -2,7 +2,7 @@ import base58
 from wallet import hashPubKey
 from wallet_manager import WalletManager
 from transaction_input import TXInput
-from transaction_output import TXOutput
+from transaction_output import TXOutput, OutputDict
 from util import sha256
 
 from pickle import dumps
@@ -10,28 +10,31 @@ from pickle import dumps
 subsidy = 50
 
 class Transaction(object):
-    def __init__(self, vin=[], vout=[], id=b''):
+    def __init__(self, vin=[], outDict=None, id=b''):
         self.vin = vin
-        self.vout = vout
+        if not outDict or not isinstance(outDict, OutputDict):
+            outDict = OutputDict()
+
+        self.outDict = outDict
         if id:
             self.id = id
         else:
             self.setId()
 
-    # TODO, match hash from github
     def setId(self):
         # We want an empty id when we hash this tx
         self.id = b''
-        id = sha256(dumps(self))
-
+        self.id = sha256(dumps(self))
 
     def isCoinbase(self):
-        return len(self.vin) == 1 and len(self.vin[0].txId) == 0 and self.vin[0].vout == -1
+        return len(self.vin) == 1 and len(self.vin[0].txId) == 0 and self.vin[0].outIdx == -1
 
     def trimmedCopy(self):
         # Don't populate signature or pubKey for inputs
-        inputs =  [TXInput(txIn.txId, txIn.vout) for txIn in self.vin]
-        outputs = [TXOutput(txOut.value, pubKeyHash=txOut.pubKeyHash) for txOut in self.vout]
+        inputs =  [TXInput(txIn.txId, txIn.outIdx) for txIn in self.vin]
+        # Readability may be shitty, but this copies the output dictionary
+        # outputs = {idx: TXOutput(self.outDict[idx].value, idx=self.outDict[idx].idx, pubKeyHash=self.outDict[idx].pubKeyHash) for idx in self.outDict}
+        outputs = OutputDict(d=self.outDict)
 
         return Transaction(inputs, outputs, self.id)
 
@@ -46,7 +49,7 @@ class Transaction(object):
         for i, txInput in enumerate(self.vin):
             inCopy = trimCopy.vin[i]
             prevTx = prevTxs[txInput.txId.hex()]
-            refTxOutput = prevTx.vout[txInput.vout]
+            refTxOutput = prevTx.outDict[txInput.outIdx]
             inCopy.signature = None
             inCopy.pubKey = refTxOutput.pubKeyHash
             trimCopy.setId()
@@ -66,7 +69,7 @@ class Transaction(object):
 
             # get the output this input references
             prevTx = prevTxs[txInput.txId.hex()]
-            refTxOutput = prevTx.vout[txInput.vout]
+            refTxOutput = prevTx.outDict[txInput.outIdx]
 
             # Make sure the conditions of this input
             # (no signature, pubKey is out.pubKeyHash)
@@ -88,20 +91,21 @@ class Transaction(object):
         # Didn't find any invalid txs
         return True
 
-def newTX(vin, vout):
-    tx = Transaction(vin, vout)
+def newTX(vin, outDict):
+    tx = Transaction(vin, outDict)
     tx.setId()
     return tx
 
 # Returns a Transaction instance
-def newCoinbaseTX(to, data):
-    if data == "":
+def newCoinbaseTX(to, data=""):
+    if not data:
         data = "Reward to %s" % to
 
     txin = TXInput(pubKey=data)
-    txout = TXOutput(subsidy, address=to)
+    outDict = OutputDict()
+    outDict.append(TXOutput(subsidy, address=to))
 
-    return Transaction([txin], [txout])
+    return Transaction([txin], outDict)
 
 def newUTXOTransaction(frum, to, amount, chain):
     wm = WalletManager()
@@ -116,11 +120,13 @@ def newUTXOTransaction(frum, to, amount, chain):
         return None
 
     inputs = [TXInput(txId, outIdx, pubKey=w.publicKey) for txId in validOutputs for outIdx in validOutputs[txId]]
-    outputs = [TXOutput(amount, address=to)]
+    # outputs = [TXOutput(amount, idx=0, address=to)]
+    outDict = OutputDict()
+    outDict.append(TXOutput(amount, idx=0, address=to))
     if acc > amount:
-        outputs.append(TXOutput(acc - amount, address=frum))
+        outDict.append(TXOutput(acc - amount, idx=1, address=frum))
 
-    tx = Transaction(inputs, outputs)
+    tx = Transaction(inputs, outDict)
     prevTXs = chain.getPrevTransactions(tx)
     tx.sign(w.privateKey, prevTXs)
 

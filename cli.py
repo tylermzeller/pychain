@@ -1,17 +1,18 @@
-from util import to_str
+import base58
 import blockchain
 import pow
 import transaction
 import wallet
+
+from util import to_str
+from utxo_set import UTXOSet
 from wallet_manager import WalletManager
-import base58
 
 import argparse
 
 def createWallet():
     wm = WalletManager()
     w = wm.createWallet()
-    wm.db.close()
     print("New address: %s" % to_str(w.getAddress()))
 
 def listAddresses():
@@ -20,7 +21,7 @@ def listAddresses():
     if not addresses:
         print("Error: Could not get wallets")
         return
-    wm.db.close()
+
     for address in addresses:
         print(address)
 
@@ -36,15 +37,15 @@ def printChain():
             print(tx)
         print('\n')
 
-    bc.db.close()
-
 def newBlockchain(address):
     if not wallet.validateAddress(address.encode()):
         print("Error: Address is not valid")
         return
 
-    bc = blockchain.newBlockchain(address.encode())
-    bc.db.close()
+    bc = blockchain.Blockchain(address.encode())
+
+    utxoSet = UTXOSet(bc)
+    utxoSet.reindex()
     print("Done")
 
 def getBalance(address):
@@ -52,10 +53,9 @@ def getBalance(address):
         print("Error: Address is not valid")
         return
 
-    bc = blockchain.newBlockchain(address.encode())
+    bc = blockchain.Blockchain(address.encode())
     pubKeyHash = base58.decode(address.encode())[1:-4]
     balance = sum([out.value for out in bc.findUTXO(pubKeyHash)])
-    bc.db.close()
     print("Balance of '%s': %d" % (address, balance))
 
 def send(frum, to, amount):
@@ -67,12 +67,14 @@ def send(frum, to, amount):
         print("Error: Recipient address is not valid")
         return
 
-    bc = blockchain.newBlockchain(frum.encode())
+    bc = blockchain.Blockchain(frum.encode())
+    utxoSet = UTXOSeT(bc)
+    utxoSet.reindex()
     tx = transaction.newUTXOTransaction(frum.encode(), to.encode(), amount, bc)
     if tx:
-        bc.mineBlock([tx])
+        newBlock = bc.mineBlock([tx])
+        utxoSet.update(newBlock)
         print("Success!")
-    bc.db.close()
 
 def run():
     parser = argparse.ArgumentParser(description='Process blockchain commands')
