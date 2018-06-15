@@ -21,6 +21,23 @@ class Transaction(object):
         else:
             self.setId()
 
+    def __str__(self):
+        lines = []
+
+        for i, txInput in enumerate(self.vin):
+            lines.append("Input %d: " % i)
+            lines.append("\tOutput ID: %s" % txInput.txId.hex())
+            lines.append("\tOut Index: %d" % txInput.outIdx)
+            lines.append("\tSignature: %s" % txInput.signature.hex())
+            lines.append("\tPubKey:    %s" % txInput.pubKey.to_string())
+
+        for i, txOutput in self.outDict.items():
+            lines.append("Output %d: " % i)
+            lines.append("\tValue:      %d" % txOutput.value)
+            lines.append("\tPubKeyHash: %s" % txOutput.pubKeyHash.hex())
+
+    return '\n'.join(lines)
+
     def setId(self):
         # We want an empty id when we hash this tx
         self.id = b''
