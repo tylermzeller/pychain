@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import cli
 from blockchain import BlockchainManager
 from utxo_set import UTXOSet

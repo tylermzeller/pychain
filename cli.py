@@ -4,7 +4,7 @@ import transaction
 import wallet
 
 from blockchain import Blockchain
-from util import to_str
+from util import to_str, isSubstringOf
 from utxo_set import UTXOSet
 from wallet_manager import WalletManager
 
@@ -86,17 +86,19 @@ def run():
     parser.add_argument('--amount', dest='amount', type=int)
     args = parser.parse_args()
 
-    if args.command.lower() in ['p', 'print', 'log', 'show', 'display']:
+    command = args.command.lower()
+
+    if isSubstringOf('print-blockchain', command):
         printChain()
-    elif args.command.lower() in ['nbc', 'newblockchain', 'newchain']:
+    elif isSubstringOf('init-blockchain', command):
         newBlockchain(args.address)
-    elif args.command.lower() in ['gb', 'getbalance', 'b', 'balance']:
+    elif isSubstringOf('get-balance', command):
         getBalance(args.address)
-    elif args.command.lower() in ['s', 'send', 'pay']:
+    elif isSubstringOf('send', command):
         send(args.frum, args.to, args.amount)
-    elif args.command.lower() in ['cw', 'createwallet']:
+    elif isSubstringOf('create-wallet', command):
         createWallet()
-    elif args.command.lower() in ['l', 'la', 'list', 'listaddresses']:
+    elif isSubstringOf('list-addresses', command):
         listAddresses()
     else:
         print("No such command.")

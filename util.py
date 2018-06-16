@@ -22,3 +22,6 @@ def hashData(hashObj, data):
 # prefer to_s(bytes) than bytes.decode() for readability
 def to_str(bytesString):
     return bytesString.decode()
+
+def isSubstringOf(a, b):
+    return b.find(a) == 0

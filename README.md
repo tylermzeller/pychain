@@ -15,30 +15,37 @@ Learning about blockchains from [Jeiwan](https://github.com/Jeiwan/blockchain_go
 
 ## Quick Start
 
-### Creating wallets
-Command: `cw` or `createwallet`
+### Creating Wallets
+Command: `create-wallet`
 ```bash
-$ python gucci_main.py cw
+$ ./gucci_main.py c
 New address: 1BRRYXYbCMxZ3sJAZjKYkFiTkLjRus51wY
-$ python gucci_main.py cw
+$ ./gucci_main.py c
 New address: 12JShnTCMeqib8ezHcdPotTSxaSwJqauMn
 ```
 
 ### Creating a Blockchain
 #### Command:
-`nbc`, `newchain`, or `newblockchain`
+`init-blockchain`
 ```bash
-$ python gucci_main.py nbc --address 1BRRYXYbCMxZ3sJAZjKYkFiTkLjRus51wY
+$ ./gucci_main.py i --address 1BRRYXYbCMxZ3sJAZjKYkFiTkLjRus51wY
 
 Done
 ```
 
 ### Printing the Blockchain
 #### Command:
-`p`, `print`, `log`, `show`, `display`
+`print-blockchain`
 ```bash
-$ python gucci_main.py print
+$ ./gucci_main.py p
 ******* Block 000000f9acec4af7e34e14450f3077c2491bab5a2c4c674341a939e29f350f76 *******
 Prev. Hash:   0000000000000000000000000000000000000000000000000000000000000000
 PoW:          True
+```
+
+### Get Wallet balance
+### Command:
+`get-balance`
+```bash
+$ ./gucci_main.py g --address 1BRRYXYbCMxZ3sJAZjKYkFiTkLjRus51wY
 ```
