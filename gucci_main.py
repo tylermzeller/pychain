@@ -7,7 +7,7 @@ def main():
     try:
         cli.run()
     finally:
-        print("Cleaning up...")
+        print("\n\nCleaning up...")
         # ecksdee U+1F602
         for bad_python_code in [UTXOSet, WalletManager, BlockchainManager]:
             bad_python_code().closeDB()

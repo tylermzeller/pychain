@@ -56,7 +56,7 @@ class UTXOSet:
             self.db.close()
 
     instance = None
-    def __init__(self, blockchain):
+    def __init__(self, blockchain=None):
         if not UTXOSet.instance:
             UTXOSet.instance = UTXOSet.__UTXOSet(blockchain)
 

@@ -20,7 +20,7 @@ class TXOutput:
 class OutputDict(dict):
     # constructor is a copy constructor
     def __init__(self, d={}):
-        self.latestIdx = 0
+        self.latestIdx = -1
         for idx, txOutput in d.items():
             if self.mustRejectDict(idx, txOutput):
                 self.cleanUp()
@@ -39,14 +39,14 @@ class OutputDict(dict):
                 txOutput.idx = self.latestIdx
                 self[self.latestIdx] = txOutput
 
-    def append(self, output):
-        if checkTXOutput(output):
+    def append(self, txOutput):
+        if checkTXOutput(txOutput):
             if txOutput.idx != -1:
                 print("Error: TXOutput already has a valid idx. Cannot reindex.")
                 return
             self.latestIdx += 1
             txOutput.idx = self.latestIdx
-            self[self.latestIdx] = output
+            self[self.latestIdx] = txOutput
 
 
     def mustRejectDict(self, key, value):

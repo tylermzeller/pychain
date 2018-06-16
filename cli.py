@@ -1,9 +1,9 @@
 import base58
-import blockchain
 import pow
 import transaction
 import wallet
 
+from blockchain import Blockchain
 from util import to_str
 from utxo_set import UTXOSet
 from wallet_manager import WalletManager
@@ -26,7 +26,7 @@ def listAddresses():
         print(address)
 
 def printChain():
-    bc = blockchain.newBlockchain(b'')
+    bc = Blockchain(b'')
     for block in bc.iter_blocks():
         proof = pow.ProofOfWork(block)
 
@@ -42,7 +42,7 @@ def newBlockchain(address):
         print("Error: Address is not valid")
         return
 
-    bc = blockchain.Blockchain(address.encode())
+    bc = Blockchain(address.encode())
 
     utxoSet = UTXOSet(bc)
     utxoSet.reindex()
@@ -53,7 +53,7 @@ def getBalance(address):
         print("Error: Address is not valid")
         return
 
-    bc = blockchain.Blockchain(address.encode())
+    bc = Blockchain()
     pubKeyHash = base58.decode(address.encode())[1:-4]
     balance = sum([out.value for out in bc.findUTXO(pubKeyHash)])
     print("Balance of '%s': %d" % (address, balance))
@@ -67,12 +67,13 @@ def send(frum, to, amount):
         print("Error: Recipient address is not valid")
         return
 
-    bc = blockchain.Blockchain(frum.encode())
+    bc = Blockchain()
     utxoSet = UTXOSeT(bc)
     utxoSet.reindex()
-    tx = transaction.newUTXOTransaction(frum.encode(), to.encode(), amount, bc)
+    tx = transaction.newUTXOTransaction(frum.encode(), to.encode(), amount, utxoSet)
     if tx:
-        newBlock = bc.mineBlock([tx])
+        coinbase = transaction.newCoinbaseTX(frum.encode())
+        newBlock = bc.mineBlock([coinbase, tx])
         utxoSet.update(newBlock)
         print("Success!")
 

@@ -29,14 +29,18 @@ class Transaction(object):
             lines.append("\tOutput ID: %s" % txInput.txId.hex())
             lines.append("\tOut Index: %d" % txInput.outIdx)
             lines.append("\tSignature: %s" % txInput.signature.hex())
-            lines.append("\tPubKey:    %s" % txInput.pubKey.to_string())
+            if isinstance(txInput.pubKey, str):
+                lines.append("\tPubKey:    %s" % txInput.pubKey)
+            else:
+                lines.append("\tPubKey:    %s" % txInput.pubKey.to_string())
+
 
         for i, txOutput in self.outDict.items():
             lines.append("Output %d: " % i)
             lines.append("\tValue:      %d" % txOutput.value)
             lines.append("\tPubKeyHash: %s" % txOutput.pubKeyHash.hex())
 
-    return '\n'.join(lines)
+        return '\n'.join(lines)
 
     def setId(self):
         # We want an empty id when we hash this tx
@@ -116,7 +120,7 @@ def newTX(vin, outDict):
 # Returns a Transaction instance
 def newCoinbaseTX(to, data=""):
     if not data:
-        data = "Reward to %s" % to
+        data = "Reward to %s" % to.decode()
 
     txin = TXInput(pubKey=data)
     outDict = OutputDict()
@@ -124,13 +128,13 @@ def newCoinbaseTX(to, data=""):
 
     return Transaction([txin], outDict)
 
-def newUTXOTransaction(frum, to, amount, chain):
+def newUTXOTransaction(frum, to, amount, utxoSet):
     wm = WalletManager()
     w = wm.getWallet(frum)
     pubKeyHash = hashPubKey(w.publicKey)
     # TODO: would it be better to return the actual output object as well?
     # This would negate the need to call getPrevTransactions() below.
-    acc, validOutputs = chain.findSpendableOutputs(pubKeyHash, amount)
+    acc, validOutputs = utxoSet.findSpendableOutputs(pubKeyHash, amount)
 
     if acc < amount:
         print('Not enough funds!')
@@ -139,9 +143,9 @@ def newUTXOTransaction(frum, to, amount, chain):
     inputs = [TXInput(txId, outIdx, pubKey=w.publicKey) for txId in validOutputs for outIdx in validOutputs[txId]]
     # outputs = [TXOutput(amount, idx=0, address=to)]
     outDict = OutputDict()
-    outDict.append(TXOutput(amount, idx=0, address=to))
+    outDict.append(TXOutput(amount, address=to))
     if acc > amount:
-        outDict.append(TXOutput(acc - amount, idx=1, address=frum))
+        outDict.append(TXOutput(acc - amount, address=frum))
 
     tx = Transaction(inputs, outDict)
     prevTXs = chain.getPrevTransactions(tx)

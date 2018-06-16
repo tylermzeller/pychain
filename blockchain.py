@@ -45,7 +45,7 @@ class BlockchainIterator:
         return not (self.currentHash == (b'\x00' * 32))
 
 class Blockchain:
-    def __init__(self, address):
+    def __init__(self, address=None):
         bm = BlockchainManager()
         if not bm.exists('l'):
             coinbase = transaction.newCoinbaseTX(address)
