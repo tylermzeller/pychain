@@ -1,6 +1,8 @@
 from pow import ProofOfWork
 from util import sha256
+from merkle_tree import MerkleTree
 
+from pickle import dumps
 from time import time
 
 
@@ -12,8 +14,9 @@ class Block(object):
         self.nonce, self.hash = ProofOfWork(self).run()
 
     def hashTransactions(self):
-        txHashes = [tx.id for tx in self.transactions]
-        return sha256(b''.join(txHashes))
+        txs = [dumps(tx) for tx in self.transactions]
+        tree = MerkleTree(txs)
+        return tree.data
 
 def newGenesisBlock(coinbase):
     return Block([coinbase], b'\x00' * 32)
