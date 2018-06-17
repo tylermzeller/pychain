@@ -6,6 +6,7 @@ from transaction_output import TXOutput, OutputDict
 from util import sha256
 
 from pickle import dumps
+from random import randint
 
 subsidy = 50
 
@@ -22,24 +23,26 @@ class Transaction(object):
             self.setId()
 
     def __str__(self):
-        lines = []
+        lines = ['<tx id=%s>' % self.id.hex()]
 
         for i, txInput in enumerate(self.vin):
-            lines.append("Input %d: " % i)
-            lines.append("\tOutput ID: %s" % txInput.txId.hex())
-            lines.append("\tOut Index: %d" % txInput.outIdx)
-            lines.append("\tSignature: %s" % txInput.signature.hex())
+            lines.append("  <input i=%d>" % i)
+            lines.append("    <outputID>%s</outputID>" % txInput.txId.hex())
+            lines.append("    <outIdx>%d</outIdx>" % txInput.outIdx)
+            lines.append("    <signature>%s</signature>" % txInput.signature.hex())
             if isinstance(txInput.pubKey, str):
-                lines.append("\tPubKey:    %s" % txInput.pubKey)
+                lines.append("    <pubKey>%s</pubkey>" % txInput.pubKey)
             else:
-                lines.append("\tPubKey:    %s" % txInput.pubKey.to_string())
-
+                lines.append("    <pubKey>%s</pubkey>" % txInput.pubKey.to_string().hex())
+            lines.append("  </input>")
 
         for i, txOutput in self.outDict.items():
-            lines.append("Output %d: " % i)
-            lines.append("\tValue:      %d" % txOutput.value)
-            lines.append("\tPubKeyHash: %s" % txOutput.pubKeyHash.hex())
+            lines.append("  <output i=%d>" % i)
+            lines.append("    <value>%d</value>" % txOutput.value)
+            lines.append("    <pubKeyHash>%s</pubKeyHash>" % txOutput.pubKeyHash.hex())
+            lines.append("  </output>")
 
+        lines.append("</tx>")
         return '\n'.join(lines)
 
     def setId(self):
@@ -69,7 +72,7 @@ class Transaction(object):
 
         for i, txInput in enumerate(self.vin):
             inCopy = trimCopy.vin[i]
-            prevTx = prevTxs[txInput.txId.hex()]
+            prevTx = prevTxs[txInput.txId]
             refTxOutput = prevTx.outDict[txInput.outIdx]
             inCopy.signature = None
             inCopy.pubKey = refTxOutput.pubKeyHash
@@ -78,6 +81,14 @@ class Transaction(object):
             txInput.signature = privKey.sign(trimCopy.id)
 
     def verify(self, prevTxs):
+        if self.isCoinbase(): return True
+
+        for txInput in self.vin:
+            if txInput.txId not in prevTxs:
+                raise Exception("Prev TX for TXInput %s not found" % txInput.txId.hex())
+            if not prevTxs[txInput.txId].id:
+                print(prevTxs[txInput.txId])
+                raise Exception("Invalid previous tx.")
         # A trimmed copy is a copy of the TX, but the
         # inputs have no signatures or pubkeys
         trimCopy = self.trimmedCopy()
@@ -89,7 +100,7 @@ class Transaction(object):
             inCopy = trimCopy.vin[i]
 
             # get the output this input references
-            prevTx = prevTxs[txInput.txId.hex()]
+            prevTx = prevTxs[txInput.txId]
             refTxOutput = prevTx.outDict[txInput.outIdx]
 
             # Make sure the conditions of this input
@@ -118,11 +129,12 @@ def newTX(vin, outDict):
     return tx
 
 # Returns a Transaction instance
-def newCoinbaseTX(to, data=""):
-    if not data:
-        data = "Reward to %s" % to.decode()
+def newCoinbaseTX(to):
+    randbytes = b''
+    for i in range(40):
+        randbytes += bytes([randint(0, 255)])
 
-    txin = TXInput(pubKey=data)
+    txin = TXInput(pubKey=randbytes.hex())
     outDict = OutputDict()
     outDict.append(TXOutput(subsidy, address=to))
 
@@ -148,7 +160,7 @@ def newUTXOTransaction(frum, to, amount, utxoSet):
         outDict.append(TXOutput(acc - amount, address=frum))
 
     tx = Transaction(inputs, outDict)
-    prevTXs = chain.getPrevTransactions(tx)
+    prevTXs = utxoSet.bc.getPrevTransactions(tx)
     tx.sign(w.privateKey, prevTXs)
 
     return tx

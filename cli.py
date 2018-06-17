@@ -44,8 +44,8 @@ def newBlockchain(address):
 
     bc = Blockchain(address.encode())
 
-    utxoSet = UTXOSet(bc)
-    utxoSet.reindex()
+    us = UTXOSet(bc)
+    us.reindex()
     print("Done")
 
 def getBalance(address):
@@ -54,8 +54,9 @@ def getBalance(address):
         return
 
     bc = Blockchain()
+    us = UTXOSet(bc)
     pubKeyHash = base58.decode(address.encode())[1:-4]
-    balance = sum([out.value for out in bc.findUTXO(pubKeyHash)])
+    balance = sum([out.value for out in us.findUTXO(pubKeyHash)])
     print("Balance of '%s': %d" % (address, balance))
 
 def send(frum, to, amount):
@@ -68,13 +69,13 @@ def send(frum, to, amount):
         return
 
     bc = Blockchain()
-    utxoSet = UTXOSeT(bc)
-    utxoSet.reindex()
-    tx = transaction.newUTXOTransaction(frum.encode(), to.encode(), amount, utxoSet)
+    us = UTXOSet(bc)
+    us.reindex()
+    tx = transaction.newUTXOTransaction(frum.encode(), to.encode(), amount, us)
     if tx:
         coinbase = transaction.newCoinbaseTX(frum.encode())
         newBlock = bc.mineBlock([coinbase, tx])
-        utxoSet.update(newBlock)
+        us.update(newBlock)
         print("Success!")
 
 def run():
@@ -88,17 +89,17 @@ def run():
 
     command = args.command.lower()
 
-    if isSubstringOf('print-blockchain', command):
+    if isSubstringOf(command, 'print-blockchain'):
         printChain()
-    elif isSubstringOf('init-blockchain', command):
+    elif isSubstringOf(command, 'init-blockchain'):
         newBlockchain(args.address)
-    elif isSubstringOf('get-balance', command):
+    elif isSubstringOf(command, 'get-balance'):
         getBalance(args.address)
-    elif isSubstringOf('send', command):
+    elif isSubstringOf(command, 'send'):
         send(args.frum, args.to, args.amount)
-    elif isSubstringOf('create-wallet', command):
+    elif isSubstringOf(command, 'create-wallet'):
         createWallet()
-    elif isSubstringOf('list-addresses', command):
+    elif isSubstringOf(command, 'list-addresses'):
         listAddresses()
     else:
         print("No such command.")

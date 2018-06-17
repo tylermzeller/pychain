@@ -48,6 +48,9 @@ class Blockchain:
     def __init__(self, address=None):
         bm = BlockchainManager()
         if not bm.exists('l'):
+            if not address:
+                print("Error: Address is required.")
+                raise Exception("Blockchain not initialized")
             coinbase = transaction.newCoinbaseTX(address)
             genesis = block.newGenesisBlock(coinbase)
             bm.put(genesis.hash.hex(), genesis)
@@ -66,6 +69,7 @@ class Blockchain:
         newBlock = block.Block(transactions, lastHash)
         bm.put(newBlock.hash.hex(), newBlock)
         bm.put('l', newBlock.hash)
+        return newBlock
 
     def iterator(self):
         bm = BlockchainManager()
@@ -114,9 +118,14 @@ class Blockchain:
     # hashed by the previous transactions' IDs
     def getPrevTransactions(self, tx):
         prevTXs = {}
+        print(tx)
 
         for vin in tx.vin:
+            print('ID ' + vin.txId.hex())
             prevTX = self.findTransaction(vin.txId)
-            prevTXs[prevTX.id.hex()] = prevTX
+            if prevTX:
+                prevTXs[prevTX.id] = prevTX
+            else:
+                print('Could not find!')
 
         return prevTXs

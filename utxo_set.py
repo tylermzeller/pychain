@@ -33,7 +33,7 @@ class UTXOSet:
                             self.db[txInput.txId.hex()] = updatedOutputs
 
                 # add new outputs to the UTXO set
-                self.db[tx.id.hex()] = tx.outDict.values()
+                self.db[tx.id.hex()] = list(tx.outDict.values())
 
         def findSpendableOutputs(self, pubKeyHash, amount):
             unspentOutIndices = {}
@@ -43,9 +43,10 @@ class UTXOSet:
                 for txOutput in self.db[txId]:
                     if txOutput.isLockedWithKey(pubKeyHash) and accumulated < amount:
                         accumulated += txOutput.value
-                        if txId not in unspentOutIndices:
-                            unspentOutIndices[txId] = []
-                        unspentOutIndices[txId].append(txOutput.idx)
+                        rawId = unhexlify(txId)
+                        if rawId not in unspentOutIndices:
+                            unspentOutIndices[rawId] = []
+                        unspentOutIndices[rawId].append(txOutput.idx)
 
             return accumulated, unspentOutIndices
 
