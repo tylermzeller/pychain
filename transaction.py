@@ -23,26 +23,26 @@ class Transaction(object):
             self.setId()
 
     def __str__(self):
-        lines = ['<tx id=%s>' % self.id.hex()]
+        lines = ['  <tx id=%s>' % self.id.hex()]
 
         for i, txInput in enumerate(self.vin):
-            lines.append("  <input i=%d>" % i)
-            lines.append("    <outputID>%s</outputID>" % txInput.txId.hex())
-            lines.append("    <outIdx>%d</outIdx>" % txInput.outIdx)
-            lines.append("    <signature>%s</signature>" % txInput.signature.hex())
+            lines.append("    <input i=%d>" % i)
+            lines.append("      <outputID>%s</outputID>" % txInput.txId.hex())
+            lines.append("      <outIdx>%d</outIdx>" % txInput.outIdx)
+            lines.append("      <signature>%s</signature>" % txInput.signature.hex())
             if isinstance(txInput.pubKey, str):
-                lines.append("    <pubKey>%s</pubkey>" % txInput.pubKey)
+                lines.append("      <pubKey>%s</pubkey>" % txInput.pubKey)
             else:
-                lines.append("    <pubKey>%s</pubkey>" % txInput.pubKey.to_string().hex())
-            lines.append("  </input>")
+                lines.append("      <pubKey>%s</pubkey>" % txInput.pubKey.to_string().hex())
+            lines.append("    </input>")
 
         for i, txOutput in self.outDict.items():
-            lines.append("  <output i=%d>" % i)
-            lines.append("    <value>%d</value>" % txOutput.value)
-            lines.append("    <pubKeyHash>%s</pubKeyHash>" % txOutput.pubKeyHash.hex())
-            lines.append("  </output>")
+            lines.append("    <output i=%d>" % i)
+            lines.append("      <value>%d</value>" % txOutput.value)
+            lines.append("      <pubKeyHash>%s</pubKeyHash>" % txOutput.pubKeyHash.hex())
+            lines.append("    </output>")
 
-        lines.append("</tx>")
+        lines.append("  </tx>")
         return '\n'.join(lines)
 
     def setId(self):

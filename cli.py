@@ -25,17 +25,18 @@ def listAddresses():
     for address in addresses:
         print(address)
 
+# TODO: use actual XML (or JSON or whatever) serialization
 def printChain():
     bc = Blockchain(b'')
     for block in bc.iter_blocks():
         proof = pow.ProofOfWork(block)
 
-        print('******* Block %s *******' % block.hash.hex())
-        print('Prev. Hash:   %s' % (block.prevHash.hex()))
-        print('PoW:          %s'% (str(proof.validate())))
+        print('\n<block hash=%s>' % block.hash.hex())
+        print('  <prevHash>%s</prevHash>' % (block.prevHash.hex()))
+        print('  <proof>%s</proof>' % (str(proof.validate())))
         for tx in block.transactions:
             print(tx)
-        print('\n')
+        print('</block>\n')
 
 def newBlockchain(address):
     if not wallet.validateAddress(address.encode()):

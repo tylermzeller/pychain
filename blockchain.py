@@ -118,14 +118,10 @@ class Blockchain:
     # hashed by the previous transactions' IDs
     def getPrevTransactions(self, tx):
         prevTXs = {}
-        print(tx)
 
         for vin in tx.vin:
-            print('ID ' + vin.txId.hex())
             prevTX = self.findTransaction(vin.txId)
             if prevTX:
                 prevTXs[prevTX.id] = prevTX
-            else:
-                print('Could not find!')
 
         return prevTXs
