@@ -56,6 +56,32 @@ class Blockchain:
             bm.put(genesis.hash.hex(), genesis)
             bm.put('l', genesis.hash)
 
+    def getBestHeight(self):
+        bm = BlockchainManager()
+        return bm.get(bm.get('l').hex()).height
+
+    def getBlock(self, hash):
+        bm = BlockchainManager()
+        if not bm.exists(hash.hex())
+            return None
+        return bm.get(hash.hex())
+
+    def getBlockHashes(self):
+        return [block.hash for block in self.iterator()]
+
+    def addBlock(self, block):
+        bm = BlockchainManager()
+        if not bm.exists(block.hash.hex()):
+            return None
+
+        bm.put(block.hash.hex(), block)
+
+        lastHash = bm.get('l')
+        lastBlock = bm.get(lastHash.hex())
+
+        if block.height > lastBlock.height:
+            bm.put('l', block.hash)
+
     def mineBlock(self, transactions):
         for tx in transactions:
             prevTXs = self.getPrevTransactions(tx)
@@ -66,7 +92,8 @@ class Blockchain:
 
         bm = BlockchainManager()
         lastHash = bm.get('l')
-        newBlock = block.Block(transactions, lastHash)
+        lastHeight = gm.get(lastHash.hex()).height
+        newBlock = block.Block(transactions, lastHash, lastHeight + 1)
         bm.put(newBlock.hash.hex(), newBlock)
         bm.put('l', newBlock.hash)
         return newBlock

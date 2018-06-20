@@ -7,9 +7,10 @@ from time import time
 
 
 class Block(object):
-    def __init__(self, transactions, prevHash):
+    def __init__(self, transactions, prevHash, height):
         self.transactions = transactions
         self.prevHash = prevHash
+        self.height = height
         self.timestamp = int(time())
         self.nonce, self.hash = ProofOfWork(self).run()
 
@@ -19,4 +20,4 @@ class Block(object):
         return tree.data
 
 def newGenesisBlock(coinbase):
-    return Block([coinbase], b'\x00' * 32)
+    return Block([coinbase], b'\x00' * 32, 0)
