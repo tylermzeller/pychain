@@ -1,5 +1,5 @@
-import hashlib
 from struct import pack
+import hashlib
 
 def int64ToBinary(i):
     # TODO: error handling
