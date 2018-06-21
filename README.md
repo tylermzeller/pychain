@@ -2,6 +2,9 @@
 
 Learning about blockchains from [Jeiwan](https://github.com/Jeiwan/blockchain_go) and porting to Python.
 
+## DISCLAIMER
+This repository is for personal experimentation and mainly for fun. There is no set process for testing, so code in the master branch has no guarantees of running correctly.
+
 ## Current State
 
   * Persistence is accomplished using the [shelve](https://docs.python.org/3/library/shelve.html) library. With this library, there is no need to serialize/unserialize blocks or UTXOs!
