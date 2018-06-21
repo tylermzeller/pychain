@@ -1,5 +1,6 @@
-from struct import pack
 import hashlib
+from msgpack import packb, unpackb
+from struct import pack
 
 def int64ToBinary(i):
     # TODO: error handling
@@ -25,3 +26,9 @@ def to_str(bytesString):
 
 def isSubstringOf(a, b):
     return b.find(a) == 0
+
+def encodeMsg(d, encoder):
+    return packb(d, default=encoder, use_bin_type=True)
+
+def decodeMsg(msg, decoder):
+    return unpackb(msg, object_hook=decoder, raw=False)

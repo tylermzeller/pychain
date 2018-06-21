@@ -1,7 +1,8 @@
 import base58
 
 class TXOutput:
-    def __init__(self, value, idx=-1, address=None, pubKeyHash=None):
+    def __init__(self, value=0, idx=-1, address=None, pubKeyHash=None, empty=False):
+        if empty: return
         self.value = value
         self.idx = idx
         if pubKeyHash:
@@ -16,6 +17,24 @@ class TXOutput:
 
     def isLockedWithKey(self, pubKeyHash):
         return self.pubKeyHash == pubKeyHash
+
+def encodeTXOutput(txOutput):
+    if isinstance(txOutput, TXOutput):
+        return {
+            b'__txoutput__': True,
+            b'value': txOutput.value,
+            b'idx': txOutput.idx,
+            b'pubKeyHash': txOutput.pubKeyHash,
+        }
+
+def decodeTXOutput(obj):
+    if b'__txoutput__' in obj:
+        txOutput = TXOutput(empty=True)
+        txOutput.value      = obj[b'value']
+        txOutput.idx        = obj[b'idx']
+        txOutput.pubKeyHash = obj[b'pubKeyHash']
+        return txOutput
+
 
 class OutputDict(dict):
     # constructor is a copy constructor

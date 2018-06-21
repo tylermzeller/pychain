@@ -172,16 +172,17 @@ def encodeTX(tx):
         inputs = [encodeTXInput(v) for v in tx.vin]
         outputs = { k: encodeTXOutput(v) for k, v in tx.outDict.items() }
         return {
-            '__tx__': True,
-            'id': tx.id,
-            'vin': inputs,
-            'outDict': outputs
+            b'__tx__': True,
+            b'id': tx.id,
+            b'vin': inputs,
+            b'outDict': outputs
         }
 
 def decodeTX(obj):
-    if '__tx__' in obj:
+    if b'__tx__' in obj:
         tx = Transaction(empty=True)
-        tx.vin = [decodeTXInput(v) for v in obj['vin']]
-        outDict = { k: decodeTXOutput(v) for k, v in obj['outDict'] }
+        tx.vin = [decodeTXInput(v) for v in obj[b'vin']]
+        outDict = { k: decodeTXOutput(v) for k, v in obj[b'outDict'] }
         tx.outDict = OutputDict(d=outDict)
-        tx.id = obj['id']
+        tx.id = obj[b'id']
+        return tx

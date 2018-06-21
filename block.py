@@ -31,22 +31,22 @@ def encodeBlock(block):
     if isinstance(block, Block):
         encodedTXs = [encodeTX(tx) for tx in block.transactions]
         return {
-                '__block__':    True,
-                'transactions': encodedTXs,
-                'timestamp':    block.timestamp,
-                'prevHash':     block.prevHash,
-                'hash':         block.hash,
-                'nonce':        block.nonce,
-                'height':       block.height,
+                b'__block__':    True,
+                b'transactions': encodedTXs,
+                b'timestamp':    block.timestamp,
+                b'prevHash':     block.prevHash,
+                b'hash':         block.hash,
+                b'nonce':        block.nonce,
+                b'height':       block.height,
                 }
 
 def decodeBlock(obj):
-    if '__block__' in obj:
+    if b'__block__' in obj:
         block = Block(empty=True)
-        block.timestamp = obj['timestamp']
-        block.prevHash = obj['prevHash']
-        block.height = obj['height']
-        block.hash = obj['hash']
-        block.nonce = obj['nonce']
-        block.transactions = [decodeTX(txObj) for txObj in obj['transactions']]
-    else: return None
+        block.timestamp =   obj[b'timestamp']
+        block.prevHash =    obj[b'prevHash']
+        block.height =      obj[b'height']
+        block.hash =        obj[b'hash']
+        block.nonce =       obj[b'nonce']
+        block.transactions = [decodeTX(txObj) for txObj in obj[b'transactions']]
+        return block
