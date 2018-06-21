@@ -1,8 +1,8 @@
 import base58
 from wallet import hashPubKey
 from wallet_manager import WalletManager
-from transaction_input import TXInput
-from transaction_output import TXOutput, OutputDict
+from transaction_input import TXInput, encodeTXInput, decodeTXInput
+from transaction_output import TXOutput, OutputDict, encodeTXOuput, decodeTXOutput
 from util import sha256
 
 from pickle import dumps
@@ -11,7 +11,9 @@ from random import randint
 subsidy = 50
 
 class Transaction(object):
-    def __init__(self, vin=[], outDict=None, id=b''):
+    def __init__(self, vin=[], outDict=None, id=b'', empty=False):
+        if empty:
+            return
         self.vin = vin
         if not outDict or not isinstance(outDict, OutputDict):
             outDict = OutputDict()
@@ -164,3 +166,22 @@ def newUTXOTransaction(frum, to, amount, utxoSet):
     tx.sign(w.privateKey, prevTXs)
 
     return tx
+
+def encodeTX(tx):
+    if isinstance(tx, Transaction):
+        inputs = [encodeTXInput(v) for v in tx.vin]
+        outputs = { k: encodeTXOutput(v) for k, v in tx.outDict.items() }
+        return {
+            '__tx__': True,
+            'id': tx.id,
+            'vin': inputs,
+            'outDict': outputs
+        }
+
+def decodeTX(obj):
+    if '__tx__' in obj:
+        tx = Transaction(empty=True)
+        tx.vin = [decodeTXInput(v) for v in obj['vin']]
+        outDict = { k: decodeTXOutput(v) for k, v in obj['outDict'] }
+        tx.outDict = OutputDict(d=outDict)
+        tx.id = obj['id']
