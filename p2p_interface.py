@@ -1,46 +1,54 @@
 from async_server import AsyncServer
 from util import decodeMsg
 
+import socket
 from struct import pack, unpack
 
 nodeVersion = 1
 commandLen = 12
 
-class addr:
-    def __init__(self, addrList):
-        self.addrList = addrList
+def addr(addrList):
+    return {
+        'addrList': addrList
+    }
 
-class block:
-    def __init__(self, addrFrom, block):
-        self.addrFrom = addrFrom
-        self.block = block
+def block(addrFrom, block):
+    return {
+        'addrFrom': addrFrom,
+        'block': block
+    }
 
-class getblocks:
-    def __init__(self, addrFrom):
-        self.addrFrom = addrFrom
+def getblocks(addrFrom):
+    return {
+        'addrFrom': addrFrom
+    }
 
-class getdata:
-    def __init__(self, typ, id):
-        self.addrFrom = addrFrom
-        self.type = typ
-        self.id = id
+def getdata(addrFrom, typ, id):
+    return {
+        'addrFrom': addrFrom,
+        'type':     typ,
+        'id':       id,
+    }
 
-class inv:
-    def __init__(self, addrFrom, typ, items):
-        self.addrFrom = addrFrom
-        self.type = typ
-        self.items = items
+def inv(addrFrom, typ, items):
+    return {
+        'addrFrom': addrFrom,
+        'type':     typ,
+        'items':    items,
+    }
 
-class tx:
-    def __init__(self, addrFrom, transaction):
-        self.addrFrom = addrFrom
-        self.transaction = transaction
+def tx(addrFrom, transaction):
+    return {
+        'addrFrom': addrFrom,
+        'tx':       transaction,
+    }
 
-class version:
-    def __init__(self, addrFrom, version, bestHeight):
-        self.addrFrom = addrFrom
-        self.version = version
-        self.bestHeight = bestHeight
+def version(addrFrom, version, bestHeight):
+    return {
+        'addrFrom':     addrFrom,
+        'version':      versioned,
+        'bestHeight':   bestHeight
+    }
 
 def readMsg(sock):
     def recvall(sock, n):
@@ -61,6 +69,12 @@ def readMsg(sock):
     print("Receiving a message of length %d" % msglen)
     return recvall(sock, msglen)
 
+def formatCommand(command):
+    if len(command) > commandLen:
+        command = command[:commandLen]
+    zlen = commandLen - len(command)
+    return command + (zlen * b'\x00')
+
 def getCommand(msg):
     command = b''
     for i, c in enumerate(msg):
@@ -68,41 +82,21 @@ def getCommand(msg):
         command += c
     return command
 
-def handleAddr(msg):
-    pass
-
-def handleBlock(msg):
-    pass
-
-def handleInv(msg):
-    pass
-
-def handleGetBlocks(msg):
-    pass
-
-def handleGetData(msg):
-    pass
-
-def handleTX(msg):
-    pass
-
-def handleVersion(msg):
-    pass
-
-msgHandlers = {
-    'addr':         handleAddr,
-    'block':        handleBlock,
-    'inv':          handleInv,
-    'getblocks':    handleGetBlocks,
-    'getdata':      handleGetData,
-    'tx':           handleTX,
-    'version':      handleVersion
-}
-
 class SocketReader:
     def __init__(self, host='localhost', port=7667):
         self.server = AsyncServer(host, port)
         self.server.set_read_handler(self.handleRead)
+
+    def setMsgHandlers(self, msgHandlers):
+        if isinstance(msgHandlers, dict):
+            self.msgHandlers = msgHandlers
+
+    def start(self):
+        self.server.start()
+
+    # If you want to close a connection, use sock.close()
+    def stop(self):
+        self.server.stop()
 
     def handleRead(self, sock):
         msg = readMsg(sock)
@@ -113,8 +107,26 @@ class SocketReader:
         command = getCommand(msg[:commandLen])
 
         if command in msgHandlers:
-            msgHandlers[command](msg[commandLen:])
+            self.msgHandlers[command](msg[commandLen:])
         else:
             print('Unknown command!')
 
         sock.close()
+
+class SocketWriter:
+    def __init__(self, host='localhost', port=7667):
+        try:
+            self.sock = socket.create_connection((host, port), timeout=1)
+        except socket.error as err:
+            if isinstance(err, tuple):
+                print("Error %d: %s", % err)
+            else:
+                print("Error: %s", % err)
+            self.sock = None
+
+    def isConnected(self):
+        return self.sock is not None
+
+    def send(self, data):
+        self.sock.sendall(data)
+        self.sock.close()

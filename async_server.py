@@ -9,7 +9,7 @@ class AsyncServer(asyncore.dispatcher):
         asyncore.dispatcher.__init__(self)
         self._server_thread = None
         self._sock_read_handler = None
-        self.set_timeout(select_timeout)
+        self.setTimeout(select_timeout)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
         self.bind((host, port))
@@ -29,13 +29,13 @@ class AsyncServer(asyncore.dispatcher):
             thread, self._server_thread = self._server_thread, None
             thread.join()
 
-    def set_timeout(self, timeout):
+    def setTimeout(self, timeout):
         if isinstance(timeout, int):
             self._timeout = timeout
         else:
             self._timeout = 1
 
-    def set_read_handler(self, handler_func):
+    def setReadHandler(self, handler_func):
         if not callbable(handler_func):
             print("Error: expected a function argument.")
             return
@@ -46,7 +46,7 @@ class AsyncServer(asyncore.dispatcher):
 
         self._sock_read_handler = Handler
 
-    def handle_accept(self):
+    def handleAccept(self):
         tup = self.accept()
         if t is None: return
 

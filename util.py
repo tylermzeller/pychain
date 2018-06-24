@@ -27,8 +27,8 @@ def to_str(bytesString):
 def isSubstringOf(a, b):
     return b.find(a) == 0
 
-def encodeMsg(d, encoder):
+def encodeMsg(d, encoder=None):
     return packb(d, default=encoder, use_bin_type=True)
 
-def decodeMsg(msg, decoder):
+def decodeMsg(msg, decoder=None):
     return unpackb(msg, object_hook=decoder, raw=False)
