@@ -1,7 +1,6 @@
 from iter_attr import IterAttr
 from merkle_tree import MerkleTree
 from pow import ProofOfWork
-from transaction import encodeTX, decodeTX
 from util import sha256
 
 
@@ -28,6 +27,7 @@ def newGenesisBlock(coinbase):
     return Block([coinbase], b'\x00' * 32, 0)
 
 def encodeBlock(block):
+    from transaction import encodeTX
     if isinstance(block, Block):
         encodedTXs = [encodeTX(tx) for tx in block.transactions]
         return {
@@ -41,6 +41,7 @@ def encodeBlock(block):
                 }
 
 def decodeBlock(obj):
+    from transaction import decodeTX
     if b'__block__' in obj:
         block = Block(empty=True)
         block.timestamp =   obj[b'timestamp']

@@ -1,8 +1,8 @@
 import base58
 from wallet import hashPubKey
 from wallet_manager import WalletManager
-from transaction_input import TXInput, encodeTXInput, decodeTXInput
-from transaction_output import TXOutput, OutputDict, encodeTXOuput, decodeTXOutput
+from transaction_input import TXInput
+from transaction_output import TXOutput, OutputDict
 from util import sha256
 
 from pickle import dumps
@@ -168,6 +168,8 @@ def newUTXOTransaction(frum, to, amount, utxoSet):
     return tx
 
 def encodeTX(tx):
+    from transaction_input import encodeTXInput
+    from transaction_output import encodeTXOutput
     if isinstance(tx, Transaction):
         inputs = [encodeTXInput(v) for v in tx.vin]
         outputs = { k: encodeTXOutput(v) for k, v in tx.outDict.items() }
@@ -179,6 +181,8 @@ def encodeTX(tx):
         }
 
 def decodeTX(obj):
+    from transaction_input import decodeTXInput
+    from transaction_output import decodeTXOutput
     if b'__tx__' in obj:
         tx = Transaction(empty=True)
         tx.vin = [decodeTXInput(v) for v in obj[b'vin']]
