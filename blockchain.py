@@ -71,8 +71,8 @@ class Blockchain:
 
     def addBlock(self, block):
         bm = BlockchainManager()
-        if not bm.exists(block.hash.hex()):
-            return None
+        if bm.exists(block.hash.hex()):
+            return
 
         bm.put(block.hash.hex(), block)
 

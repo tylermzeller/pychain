@@ -50,6 +50,7 @@ def version(addrFrom, version, bestHeight):
         'bestHeight':   bestHeight
     }
 
+# https://stackoverflow.com/questions/17667903/python-socket-receive-large-amount-of-data
 def readMsg(sock):
     def recvall(sock, n):
         data = b''

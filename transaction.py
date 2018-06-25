@@ -1,4 +1,5 @@
 import base58
+from blockchain import Blockchain
 from wallet import hashPubKey
 from wallet_manager import WalletManager
 from transaction_input import TXInput
@@ -64,9 +65,12 @@ class Transaction(object):
 
         return Transaction(inputs, outputs, self.id)
 
-    def sign(self, privKey, prevTxs):
+    def sign(self, privKey, prevTxs=None):
         # Coinbase transactions have no inputs to sign
         if self.isCoinbase(): return
+
+        if prevTxs is None:
+            prevTxs = Blockchain().getPrevTransactions(self)
 
         # A trimmed copy is a copy of the TX, but the
         # inputs have no signatures or pubkeys
@@ -82,8 +86,11 @@ class Transaction(object):
             inCopy.pubKey = None
             txInput.signature = privKey.sign(trimCopy.id)
 
-    def verify(self, prevTxs):
+    def verify(self, prevTxs=None):
         if self.isCoinbase(): return True
+
+        if prevTxs is None:
+            prevTxs = Blockchain().getPrevTransactions(self)
 
         for txInput in self.vin:
             if txInput.txId not in prevTxs:

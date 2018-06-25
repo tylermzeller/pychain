@@ -3,7 +3,6 @@ from merkle_tree import MerkleTree
 from pow import ProofOfWork
 from util import sha256
 
-
 from pickle import dumps
 from time import time
 
@@ -38,7 +37,7 @@ def encodeBlock(block):
                 b'hash':         block.hash,
                 b'nonce':        block.nonce,
                 b'height':       block.height,
-                }
+        }
 
 def decodeBlock(obj):
     from transaction import decodeTX

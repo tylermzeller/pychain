@@ -6,7 +6,7 @@ utxoFile = 'utxoset'
 class UTXOSet:
     class __UTXOSet:
         def __init__(self, blockchain):
-            self.bc = blockchain
+            self.bc = Blockchain()
             self.db = shelve.open(utxoFile)
 
         def reindex(self):
@@ -57,9 +57,10 @@ class UTXOSet:
             self.db.close()
 
     instance = None
+    # TODO: remove blockchain arg
     def __init__(self, blockchain=None):
         if not UTXOSet.instance:
-            UTXOSet.instance = UTXOSet.__UTXOSet(blockchain)
+            UTXOSet.instance = UTXOSet.__UTXOSet()
 
     def __getattr__(self, name):
         return getattr(self.instance, name)
