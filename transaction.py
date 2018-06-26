@@ -11,7 +11,7 @@ from random import randint
 
 subsidy = 50
 
-class Transaction(object):
+class Transaction:
     def __init__(self, vin=[], outDict=None, id=b'', empty=False):
         if empty:
             return

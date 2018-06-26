@@ -3,7 +3,7 @@ from util import int64ToBinary, sha256
 targetBits = 16
 maxInt64 = 2**63 - 1
 
-class ProofOfWork(object):
+class ProofOfWork:
 
     def __init__(self, block):
         self.block = block

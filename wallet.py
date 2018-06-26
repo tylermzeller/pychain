@@ -28,7 +28,7 @@ def validateAddress(address):
     pubKeyHash = pubKeyHash[1:-4]
     return checksum(version + pubKeyHash) == chksum
 
-class Wallet(object):
+class Wallet:
     def __init__(self, privKey, pubKey):
         self.privateKey = privKey
         self.publicKey  = pubKey

@@ -5,7 +5,7 @@ import wallet
 import network
 
 from blockchain import Blockchain
-from util import to_str, isSubstringOf
+from util import toStr, isSubstringOf
 from utxo_set import UTXOSet
 from wallet_manager import WalletManager
 
@@ -14,7 +14,9 @@ import argparse
 def createWallet():
     wm = WalletManager()
     w = wm.createWallet()
-    print("New address: %s" % to_str(w.getAddress()))
+    newAddress = toStr(w.getAddress())
+    print("New address: %s" % newAddress)
+    return newAddress
 
 def listAddresses():
     wm = WalletManager()
@@ -81,6 +83,8 @@ def send(frum, to, amount):
         print("Success!")
 
 def startServer(minerAddress):
+    if minerAddress is None:
+        minerAddress = createWallet()
     if len(minerAddress) > 0 and wallet.validateAddress(minerAddress.encode()):
         print("This node is mining and will receive rewards to %s" % minerAddress)
     else:

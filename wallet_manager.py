@@ -1,4 +1,4 @@
-from util import to_str
+from util import toStr
 
 import wallet
 import time
@@ -13,7 +13,7 @@ class WalletManager:
 
         def createWallet(self):
             w = wallet.newWallet()
-            address = to_str(w.getAddress())
+            address = toStr(w.getAddress())
             self.db[address] = w
             return w
 
@@ -21,7 +21,7 @@ class WalletManager:
             return [address for address in self.db]
 
         def getWallet(self, address):
-            return self.db[to_str(address)]
+            return self.db[toStr(address)]
 
         def closeDB(self):
             self.db.close()

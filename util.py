@@ -20,9 +20,13 @@ def hashData(hashObj, data):
     hashObj.update(data)
     return hashObj.digest()
 
-# prefer to_s(bytes) than bytes.decode() for readability
-def to_str(bytesString):
-    return bytesString.decode()
+# prefer toStr(bytes) than bytes.decode() for readability
+def toStr(obj):
+    if isinstance(obj, str):
+        return obj
+    if isinstance(obj, bytes):
+        return obj.decode()
+    return str(obj)
 
 def isSubstringOf(a, b):
     return b.find(a) == 0

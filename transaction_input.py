@@ -2,7 +2,7 @@ from wallet import hashPubKey
 
 from ecdsa import VerifyingKey, SECP256k1
 
-class TXInput(object):
+class TXInput:
     def __init__(self, txId=b'', outIdx=-1, pubKey=None, empty=False):
         if empty: return
         self.txId = txId # ID of the transaction whose output is referenced by this input
