@@ -11,12 +11,16 @@ This repository is for personal experimentation and mainly for fun. There is no 
   * Public/Private key cryptography (verifying/signing) is accomplished through the [ecdsa](https://github.com/warner/python-ecdsa) library. See their README for security considerations.
   * Blocks only support PTPKH transactions. No scripting. Just locking and unlocking outputs.
 
-
-## TODO
-  * Transaction Mempool
-  * Networking
-
 ## Quick Start
+
+## Docker
+```bash
+$ docker build -t pychain .
+...
+# -it lets you input characters (CTRL-C, and 'q' to quit)
+# --rm deletes the container upon exit (i.e. deleting your databases)
+$ docker run -it --rm pychain
+```
 
 ### Creating Wallets
 #### Command:
@@ -97,4 +101,24 @@ Balance of '1Fmjs3MCtDswPeLry1BBabFk5A1SEURc4r': 50
 # sendee has all 50 of the sender's coins
 $ ./gucci_main.py g --address 17vsuqM11VJ7RYy6m6y5dZ2yk9LDMF91Wh
 Balance of '17vsuqM11VJ7RYy6m6y5dZ2yk9LDMF91Wh': 50
+```
+
+### Join Network
+#### Command:
+`up`
+```bash
+$ ./gucci_main.py up --address 13jXEksSr4khBY1bRg4pZtWod9Z3kud26S
+This node is mining and will receive rewards to 13jXEksSr4khBY1bRg4pZtWod9Z3kud26S
+My host: 172.17.0.2
+My mining address 13jXEksSr4khBY1bRg4pZtWod9Z3kud26S
+
+# this message will appear if your local
+# blockchain hasn't been initialized yet
+Empty blockchain. Creating genesis.
+Created coinbase with reward going to 13jXEksSr4khBY1bRg4pZtWod9Z3kud26S
+Merkle root e477945230fb23da77b2cfc7402494368cae487bbcbebe85f3ef1bb96819e075
+Gensis block hash: 00007faa2e194e877c1caf6aa853e3054ef386ce12338d04e3415381de21e157
+
+Starting server
+Press 'q' or 'CTRL-C' to quit.
 ```
