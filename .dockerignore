@@ -1,0 +1,7 @@
+py3env
+.git
+__pycache__
+.gitignore
+*.md
+*.db
+test.py

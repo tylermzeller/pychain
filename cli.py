@@ -90,7 +90,7 @@ def startServer(minerAddress):
     else:
         print("No or incorrect mining address. This node is not mining and will not receive rewards.")
 
-    network.startServer(minerAddress)
+    network.startServer(minerAddress.encode())
 
 def run():
     parser = argparse.ArgumentParser(description='Process blockchain commands')

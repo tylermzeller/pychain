@@ -1,5 +1,7 @@
 import block
 import transaction
+from util import toStr
+
 import shelve
 
 blockchainFile = 'blockchain'
@@ -48,11 +50,14 @@ class Blockchain:
     def __init__(self, address=None):
         bm = BlockchainManager()
         if not bm.exists('l'):
+            print("\nEmpty blockchain. Creating genesis.")
             if not address:
                 print("Error: Address is required.")
                 raise Exception("Blockchain not initialized")
             coinbase = transaction.newCoinbaseTX(address)
+            print("Created coinbase with reward going to %s" % toStr(address))
             genesis = block.newGenesisBlock(coinbase)
+            print("Gensis block hash: %s\n" % genesis.hash.hex())
             bm.put(genesis.hash.hex(), genesis)
             bm.put('l', genesis.hash)
 

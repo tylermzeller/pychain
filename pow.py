@@ -13,7 +13,7 @@ class ProofOfWork:
         b = self.block
         data = b''.join([
             b.prevHash,
-            b.hashTransactions(),
+            b.merkleRoot,
             int64ToBinary(b.timestamp),
             int64ToBinary(targetBits),
             int64ToBinary(nonce)
@@ -33,7 +33,6 @@ class ProofOfWork:
             else:
                 nonce += 1
 
-        print('\n')
         return nonce, powHash
 
     def validate(self):

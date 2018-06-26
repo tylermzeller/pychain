@@ -3,7 +3,7 @@ from async_server import AsyncServer
 from block import encodeBlock, decodeBlock
 from blockchain import Blockchain
 from transaction import encodeTX, decodeTX, newCoinbaseTX
-from util import encodeMsg, decodeMsg, waitKey
+from util import encodeMsg, decodeMsg, waitKey, toStr
 from utxo_set import UTXOSet
 
 from socket import gethostname, gethostbyname
@@ -11,7 +11,7 @@ from struct import pack
 
 nodeVersion = 1
 nodeAddress = ''
-miningAddress = ''
+miningAddress = b''
 knownNodes = []
 blocksInTransit = {}
 mempool = {}
@@ -205,7 +205,7 @@ def startServer(mineAddr):
     nodeAddress = gethostbyname(gethostname())
     print("My host: %s" % nodeAddress)
     miningAddress = mineAddr
-    print("My mining address %s" % miningAddress)
+    print("My mining address %s" % toStr(miningAddress))
 
     # create blockchain if not already created
     Blockchain(mineAddr)
