@@ -36,7 +36,7 @@ class AsyncServer(asyncore.dispatcher):
             self._timeout = 1
 
     def setReadHandler(self, handler_func):
-        if not callbable(handler_func):
+        if not callable(handler_func):
             print("Error: expected a function argument.")
             return
 

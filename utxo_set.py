@@ -1,3 +1,5 @@
+from blockchain import Blockchain
+
 import shelve
 from binascii import unhexlify
 
@@ -5,7 +7,7 @@ utxoFile = 'utxoset'
 
 class UTXOSet:
     class __UTXOSet:
-        def __init__(self, blockchain):
+        def __init__(self):
             self.bc = Blockchain()
             self.db = shelve.open(utxoFile)
 

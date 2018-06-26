@@ -62,7 +62,7 @@ class Blockchain:
 
     def getBlock(self, hash):
         bm = BlockchainManager()
-        if not bm.exists(hash.hex())
+        if not bm.exists(hash.hex()):
             return None
         return bm.get(hash.hex())
 

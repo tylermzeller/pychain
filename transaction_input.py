@@ -21,8 +21,8 @@ def encodeTXInput(txInput):
             b'__txinput__': True,
             b'txId':        txInput.txId,
             b'outIdx':      txInput.outIdx,
-            b'pubKey':      txInput.pubKey.to_string()
-            b'signature':   txInput.signature
+            b'pubKey':      txInput.pubKey.to_string(),
+            b'signature':   txInput.signature,
         }
 
 def decodeTXInput(obj):

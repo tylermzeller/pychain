@@ -175,7 +175,7 @@ def handleTX(msg):
         if node != nodeAddress and node != txMsg['addrFrom']:
             sendInv(node, b'tx', [tx.id])
 
-    if len(mempool) >= 2 && len(miningAddress) > 0:
+    if len(mempool) >= 2 and len(miningAddress) > 0:
         mineTransactions()
 
 def handleVersion(msg):
@@ -203,7 +203,9 @@ msgHandlers = {
 
 def startServer(mineAddr):
     nodeAddress = gethostbyname(gethostname())
+    print("My host: %s" % nodeAddress)
     miningAddress = mineAddr
+    print("My mining address %s" % miningAddress)
 
     # create blockchain if not already created
     Blockchain(mineAddr)

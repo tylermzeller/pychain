@@ -1,4 +1,3 @@
-from iter_attr import IterAttr
 from merkle_tree import MerkleTree
 from pow import ProofOfWork
 from util import sha256

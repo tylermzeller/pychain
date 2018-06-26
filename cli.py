@@ -2,6 +2,7 @@ import base58
 import pow
 import transaction
 import wallet
+import network
 
 from blockchain import Blockchain
 from util import to_str, isSubstringOf
@@ -79,6 +80,14 @@ def send(frum, to, amount):
         us.update(newBlock)
         print("Success!")
 
+def startServer(minerAddress):
+    if len(minerAddress) > 0 and wallet.validateAddress(minerAddress.encode()):
+        print("This node is mining and will receive rewards to %s" % minerAddress)
+    else:
+        print("No or incorrect mining address. This node is not mining and will not receive rewards.")
+
+    network.startServer(minerAddress)
+
 def run():
     parser = argparse.ArgumentParser(description='Process blockchain commands')
     parser.add_argument('command', help='a command to perform on the blockchain')
@@ -102,5 +111,7 @@ def run():
         createWallet()
     elif isSubstringOf(command, 'list-addresses'):
         listAddresses()
+    elif isSubstringOf(command, 'up'):
+        startServer(args.address)
     else:
         print("No such command.")

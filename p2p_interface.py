@@ -86,31 +86,35 @@ def getCommand(msg):
 class SocketReader:
     def __init__(self, host='localhost', port=7667):
         self.server = AsyncServer(host, port)
-        self.server.set_read_handler(self.handleRead)
+        self.server.setReadHandler(self.handleRead)
 
     def setMsgHandlers(self, msgHandlers):
         if isinstance(msgHandlers, dict):
             self.msgHandlers = msgHandlers
 
     def start(self):
+        print("Starting server")
         self.server.start()
 
     # If you want to close a connection, use sock.close()
     def stop(self):
+        print("Stopping server")
         self.server.stop()
 
     def handleRead(self, sock):
+        print("Reading socket data")
         msg = readMsg(sock)
         if not msg:
+            print("Found no data")
             sock.close()
             return
 
         command = getCommand(msg[:commandLen])
 
-        if command in msgHandlers:
+        if command in self.msgHandlers:
             self.msgHandlers[command](msg[commandLen:])
         else:
-            print('Unknown command!')
+            print('Msg contained unknown command')
 
         sock.close()
 
@@ -120,14 +124,15 @@ class SocketWriter:
             self.sock = socket.create_connection((host, port), timeout=1)
         except socket.error as err:
             if isinstance(err, tuple):
-                print("Error %d: %s", % err)
+                print("Error %d: %s" % err)
             else:
-                print("Error: %s", % err)
+                print("Error: %s" % err)
             self.sock = None
 
     def isConnected(self):
         return self.sock is not None
 
     def send(self, data):
+        print("Sending data")
         self.sock.sendall(data)
         self.sock.close()
