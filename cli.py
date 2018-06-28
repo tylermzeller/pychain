@@ -48,17 +48,15 @@ def newBlockchain(address):
 
     bc = Blockchain(address.encode())
 
-    us = UTXOSet(bc)
-    us.reindex()
-    print("Done")
+    UTXOSet().reindex()
+    print("New blockchain created")
 
 def getBalance(address):
     if not wallet.validateAddress(address.encode()):
         print("Error: Address is not valid")
         return
 
-    bc = Blockchain()
-    us = UTXOSet(bc)
+    us = UTXOSet()
     pubKeyHash = base58.decode(address.encode())[1:-4]
     balance = sum([out.value for out in us.findUTXO(pubKeyHash)])
     print("Balance of '%s': %d" % (address, balance))
@@ -72,15 +70,13 @@ def send(frum, to, amount):
         print("Error: Recipient address is not valid")
         return
 
-    bc = Blockchain()
-    us = UTXOSet(bc)
-    us.reindex()
-    tx = transaction.newUTXOTransaction(frum.encode(), to.encode(), amount, us)
+    UTXOSet().reindex()
+    tx = transaction.newUTXOTransaction(frum.encode(), to.encode(), amount)
     if tx:
         coinbase = transaction.newCoinbaseTX(frum.encode())
-        newBlock = bc.mineBlock([coinbase, tx])
-        us.update(newBlock)
-        print("Success!")
+        newBlock = Blockchain().mineBlock([coinbase, tx])
+        UTXOSet().update(newBlock)
+        print("Send success!")
 
 def startServer(minerAddress):
     if minerAddress is None:
@@ -90,7 +86,17 @@ def startServer(minerAddress):
     else:
         print("No or incorrect mining address. This node is not mining and will not receive rewards.")
 
-    network.startServer(toStr(minerAddress))
+    network.startServer(minerAddress.encode())
+
+def startTest():
+    import network
+    import time
+    # every 5 seconds make a random transaction
+    # and send to a random miner
+    while 1:
+        time.sleep(5)
+        randomTX = getRandomTX()
+        sendToRandomNode(randomTX)
 
 def run():
     parser = argparse.ArgumentParser(description='Process blockchain commands')
@@ -117,5 +123,6 @@ def run():
         listAddresses()
     elif isSubstringOf(command, 'up'):
         startServer(args.address)
+    elif isSubstringOf(command, 'test'):
     else:
         print("No such command.")

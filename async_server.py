@@ -4,6 +4,7 @@ import asyncore
 import socket
 from threading import Thread
 
+# TODO: asyncore is deprecated in 3.6. Switch to ascynio
 class AsyncServer(asyncore.dispatcher):
     def __init__(self, host, port, select_timeout=1):
         asyncore.dispatcher.__init__(self)
@@ -16,12 +17,15 @@ class AsyncServer(asyncore.dispatcher):
         self.listen(5)
 
     def start(self):
-        if self._server_thread is not None:
-            return
-
-        self._server_thread = Thread(target=asyncore.loop, kwargs={'timeout': self._timeout})
-        self._server_thread.daemon = True
-        self._server_thread.start()
+        print("Looping")
+        print("\n")
+        # if self._server_thread is not None:
+        #     return
+        #
+        # self._server_thread = Thread(target=asyncore.loop, kwargs={'timeout': self._timeout})
+        # self._server_thread.daemon = True
+        # self._server_thread.start()
+        asyncore.loop(timeout=self._timeout)
 
     def stop(self):
         self.close()
@@ -41,14 +45,20 @@ class AsyncServer(asyncore.dispatcher):
             return
 
         class Handler(asyncore.dispatcher_with_send):
+            def handle_close(self):
+                print("Socket closed")
+                self.close()
+
             def handle_read(self):
+                print("Handling read")
                 handler_func(self)
 
+        print("Setting read handler")
         self._sock_read_handler = Handler
 
-    def handleAccept(self):
+    def handle_accept(self):
         tup = self.accept()
-        if t is None: return
+        if tup is None: return
 
         sock, addr = tup
         if self._sock_read_handler is None:
@@ -56,5 +66,5 @@ class AsyncServer(asyncore.dispatcher):
             sock.close()
             return
 
-        print("Incoming connection from %s", repr(addr))
+        print("Incoming connection from %s" % repr(addr))
         self._sock_read_handler(sock)

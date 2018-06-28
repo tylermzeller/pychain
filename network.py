@@ -1,9 +1,11 @@
+import node_discovery
 import p2p_interface as p2p
 from async_server import AsyncServer
 from block import encodeBlock, decodeBlock
 from blockchain import Blockchain
+from node_discovery import discoverNodes
 from transaction import encodeTX, decodeTX, newCoinbaseTX
-from util import encodeMsg, decodeMsg, waitKey, toStr
+from util import encodeMsg, decodeMsg, waitKey, canWaitKey, toStr
 from utxo_set import UTXOSet
 
 from socket import gethostname, gethostbyname
@@ -28,6 +30,7 @@ def sendPayload(address, command, payload):
         sock.send(payload)
 
 def sendAddr(address):
+    print("Sending addr")
     command = b'addr'
     addresses = p2p.addr([*knownNodes, nodeAddress])
     sendPayload(address, command, addresses)
@@ -43,6 +46,7 @@ def sendInv(address, typ, items):
     sendPayload(address, command, inv)
 
 def sendGetBlocks(address):
+    print("Sending getblocks")
     command = b'getblocks'
     getblocks = p2p.getblocks(nodeAddress)
     sendPayload(address, command, getblocks)
@@ -58,12 +62,14 @@ def sendTX(address, tx):
     sendPayload(address, command, x)
 
 def sendVersion(address):
+    print("Sending version")
     command = b'version'
     version = p2p.version(nodeAddress, nodeVersion, Blockchain().getBestHeight())
     sendPayload(address, command, version)
 
 def requestBlocks():
-    pass
+    for address in knownNodes:
+        sendGetBlocks(address)
 
 def mineTransactions():
     print("Attempting to mine new block")
@@ -179,12 +185,14 @@ def handleTX(msg):
         mineTransactions()
 
 def handleVersion(msg):
+    print("handling version")
     version = decodeMsg(msg)
+    print(version)
     localBestHeight = Blockchain().getBestHeight()
     remoteBestHeight = version['bestHeight']
-    if myBestHeight < remoteBestHeight:
+    if localBestHeight < remoteBestHeight:
         sendGetBlocks(version['addrFrom'])
-    elif myBestHeight > remoteBestHeight:
+    elif localBestHeight > remoteBestHeight:
         sendVersion(version['addrFrom'])
 
     if version['addrFrom'] not in knownNodes:
@@ -202,18 +210,25 @@ msgHandlers = {
 }
 
 def startServer(mineAddr):
+    import time
     nodeAddress = gethostbyname(gethostname())
     print("My host: %s" % nodeAddress)
     miningAddress = mineAddr
     print("My mining address %s" % toStr(miningAddress))
 
+    knownNodes = discoverNodes()
+
     # create blockchain if not already created
-    Blockchain(mineAddr)
+    Blockchain(miningAddress)
 
     sr = p2p.SocketReader(nodeAddress)
     sr.setMsgHandlers(msgHandlers)
     sr.start()
 
-    print("Press 'q' or 'CTRL-C' to quit.")
-    while waitKey() not in ['q', 'SIGINT']:
-        print("Press 'q' or 'CTRL-C' to quit.")
+    done = False
+    while not done:
+        # writing the loop this way supports
+        # attaching/detaching tty terminals (e.g. via Docker)
+        if canWaitKey():
+            print("Press 'q' or 'CTRL-C' to quit.")
+            done = waitKey() in ['q', 'SIGINT']

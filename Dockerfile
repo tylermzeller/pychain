@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD [ "python", "./gucci_main.py", "up" ]
+CMD [ "python", "-u", "./gucci_main.py", "up" ]

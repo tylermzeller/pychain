@@ -37,6 +37,9 @@ def encodeMsg(d, encoder=None):
 def decodeMsg(msg, decoder=None):
     return unpackb(msg, object_hook=decoder, raw=False)
 
+def canWaitKey():
+    import sys
+    return sys.stdin.isatty()
 # https://stackoverflow.com/a/34956791
 # Cross platform, blocking function to get a pressed key
 def waitKey():
@@ -49,7 +52,6 @@ def waitKey():
     else:
         import termios
         fd = sys.stdin.fileno()
-
         oldterm = termios.tcgetattr(fd)
         newattr = termios.tcgetattr(fd)
         newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO

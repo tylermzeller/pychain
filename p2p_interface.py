@@ -1,5 +1,5 @@
 from async_server import AsyncServer
-from util import decodeMsg
+from util import encodeMsg, decodeMsg, intToBytes
 
 import socket
 from struct import pack, unpack
@@ -46,7 +46,7 @@ def tx(addrFrom, transaction):
 def version(addrFrom, version, bestHeight):
     return {
         'addrFrom':     addrFrom,
-        'version':      versioned,
+        'version':      nodeVersion,
         'bestHeight':   bestHeight
     }
 
@@ -55,14 +55,18 @@ def readMsg(sock):
     def recvall(sock, n):
         data = b''
         while len(data) < n:
-            packet = sock.recv(n - len(data))
-            if not packet: return None
+            packetlen = n - len(data)
+            if packetlen > 4096:
+                packetlen = 4096
+            packet = sock.recv(packetlen)
+            if not packet: break
             data += packet
         return data
 
     # read the 4 byte msg length
     msglen = recvall(sock, 4)
     if not msglen: # invalid msg
+        print("No msglen")
         sock.close()
         return None
 
@@ -78,7 +82,8 @@ def formatCommand(command):
 
 def getCommand(msg):
     command = b''
-    for i, c in enumerate(msg):
+    for i, byte in enumerate(msg):
+        c = intToBytes(byte)
         if c == b'\x00': break
         command += c
     return command
@@ -86,7 +91,7 @@ def getCommand(msg):
 class SocketReader:
     def __init__(self, host='localhost', port=7667):
         self.server = AsyncServer(host, port)
-        self.server.setReadHandler(self.handleRead)
+        self.server.setReadHandler(self.handle_read)
 
     def setMsgHandlers(self, msgHandlers):
         if isinstance(msgHandlers, dict):
@@ -96,27 +101,29 @@ class SocketReader:
         print("Starting server")
         self.server.start()
 
-    # If you want to close a connection, use sock.close()
     def stop(self):
         print("Stopping server")
         self.server.stop()
 
-    def handleRead(self, sock):
+    def handle_read(self, sock):
         print("Reading socket data")
         msg = readMsg(sock)
         if not msg:
             print("Found no data")
-            sock.close()
+            sock.handle_close()
             return
 
         command = getCommand(msg[:commandLen])
 
         if command in self.msgHandlers:
             self.msgHandlers[command](msg[commandLen:])
+        elif command == b'ping':
+            pong = pack('>I', len(payload)) + b'pong'
+            sock.send(pong)
         else:
             print('Msg contained unknown command')
 
-        sock.close()
+        sock.handle_close()
 
 class SocketWriter:
     def __init__(self, host='localhost', port=7667):

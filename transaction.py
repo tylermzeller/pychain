@@ -1,4 +1,5 @@
 import base58
+import utxo_set
 from blockchain import Blockchain
 from wallet import hashPubKey
 from wallet_manager import WalletManager
@@ -149,12 +150,12 @@ def newCoinbaseTX(to):
 
     return Transaction([txin], outDict)
 
-def newUTXOTransaction(frum, to, amount, utxoSet):
+def newUTXOTransaction(frum, to, amount, utxoSet=None):
+    if utxoSet is None:
+        utxoSet = utxo_set.UTXOSet()
     wm = WalletManager()
     w = wm.getWallet(frum)
     pubKeyHash = hashPubKey(w.publicKey)
-    # TODO: would it be better to return the actual output object as well?
-    # This would negate the need to call getPrevTransactions() below.
     acc, validOutputs = utxoSet.findSpendableOutputs(pubKeyHash, amount)
 
     if acc < amount:
@@ -162,15 +163,13 @@ def newUTXOTransaction(frum, to, amount, utxoSet):
         return None
 
     inputs = [TXInput(txId, outIdx, pubKey=w.publicKey) for txId in validOutputs for outIdx in validOutputs[txId]]
-    # outputs = [TXOutput(amount, idx=0, address=to)]
     outDict = OutputDict()
     outDict.append(TXOutput(amount, address=to))
     if acc > amount:
         outDict.append(TXOutput(acc - amount, address=frum))
 
     tx = Transaction(inputs, outDict)
-    prevTXs = utxoSet.bc.getPrevTransactions(tx)
-    tx.sign(w.privateKey, prevTXs)
+    tx.sign(w.privateKey)
 
     return tx
 

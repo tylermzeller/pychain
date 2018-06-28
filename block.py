@@ -24,6 +24,9 @@ class Block:
         return tree.root.data
 
 def newGenesisBlock(coinbase):
+    # WARNING: a zero address (32 zero bytes) as the genesis prevHash
+    # is wrong in principle. A block *could* hash to this value,
+    # creating a cycle in the chain.
     return Block([coinbase], b'\x00' * 32, 0)
 
 def encodeBlock(block):
