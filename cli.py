@@ -10,6 +10,7 @@ from utxo_set import UTXOSet
 from wallet_manager import WalletManager
 
 import argparse
+import random
 
 def createWallet():
     wm = WalletManager()
@@ -53,13 +54,17 @@ def newBlockchain(address):
 
 def getBalance(address):
     if not wallet.validateAddress(address.encode()):
-        print("Error: Address is not valid")
-        return
+        print("Error: Can't get balance of invalid address.")
+        return None
 
     us = UTXOSet()
     pubKeyHash = base58.decode(address.encode())[1:-4]
-    balance = sum([out.value for out in us.findUTXO(pubKeyHash)])
-    print("Balance of '%s': %d" % (address, balance))
+    return sum([out.value for out in us.findUTXO(pubKeyHash)])
+
+def printBalance(address):
+    balance = getBalance(address)
+    if balance:
+        print("Balance of '%s': %d" % (address, balance))
 
 def send(frum, to, amount):
     if not wallet.validateAddress(frum.encode()):
@@ -88,15 +93,42 @@ def startServer(minerAddress):
 
     network.startServer(minerAddress.encode())
 
+def createRandomTX():
+    addresses = WalletManager().getAddresses()
+    while len(addresses) < 20:
+        w = WalletManager().createWallet()
+        addresses.append(toStr(w.getAddress()))
+
+    random.shuffle(addresses)
+    frum = ''
+    for address in addresses:
+        if getBalance(address) > 0:
+            frum = address
+            break
+
+    if not frum:
+        return None
+
+    random.shuffle(addresses)
+    to = addresses[0]
+    if to == frum: to = addresses[1]
+
 def startTest():
+    import os
     import network
     import time
+
     # every 5 seconds make a random transaction
     # and send to a random miner
+    numNodes, nodeName = int(os.environ['NUMNODES']), os.environ['SERVICENAME']
     while 1:
         time.sleep(5)
         randomTX = getRandomTX()
-        sendToRandomNode(randomTX)
+        if randomTX is None:
+            print("Could not create a random tx. Make sure at least one wallet has sufficient funds.")
+            break
+        randAddr = nodeName + random.choice(list(range(1, numNodes + 1)))
+        network.sendTX(randAddr, randomTX)
 
 def run():
     parser = argparse.ArgumentParser(description='Process blockchain commands')
@@ -114,7 +146,7 @@ def run():
     elif isSubstringOf(command, 'init-blockchain'):
         newBlockchain(args.address)
     elif isSubstringOf(command, 'get-balance'):
-        getBalance(args.address)
+        printBalance(args.address)
     elif isSubstringOf(command, 'send'):
         send(args.frum, args.to, args.amount)
     elif isSubstringOf(command, 'create-wallet'):
@@ -124,5 +156,6 @@ def run():
     elif isSubstringOf(command, 'up'):
         startServer(args.address)
     elif isSubstringOf(command, 'test'):
+        startTest()
     else:
         print("No such command.")

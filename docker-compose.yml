@@ -6,26 +6,10 @@ services:
       - 7667
     environment:
       - SERVICENAME=pychain_p2p
-      - NUMNODES=10
+      - NUMNODES=2
+      - PYTHONUNBUFFERED=1
     networks:
       - web
-  txgen:
-    image: pychain
-    command: ["python", "-u", "./gucci_main.py", "test"]
-    depends_on:
-      - p2p
-    environment:
-      - SERVICENAME=pychain_p2p
-      - NUMNODES=10
-    links:
-      - "p2p"
-    ports:
-      - 7667
-    networks:
-      - web
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-
 networks:
   web:
     driver: bridge

@@ -1,6 +1,6 @@
 from util import int64ToBinary, sha256
 
-targetBits = 16
+targetBits = 20
 maxInt64 = 2**63 - 1
 
 class ProofOfWork:

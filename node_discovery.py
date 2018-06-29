@@ -14,4 +14,4 @@ def discoverNodes():
     if numNodes is None or serviceName is None:
         print("Node discovery could not be performed.")
         return []
-    return map(lambda i: serviceName + str(i), random.sample(list(range(1, numNodes + 1)), numNodes // 2)])
+    return list(map(lambda i: serviceName + '_' + str(i), list(range(1, numNodes + 1))))

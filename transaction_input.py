@@ -15,13 +15,38 @@ class TXInput:
         lockingHash = hashPubKey(self.pubKey)
         return lockingHash == pubKeyHash
 
+def encodePubKey(pubKey):
+    if isinstance(pubKey, VerifyingKey):
+        return {
+            b'__pubKeyObj__': True,
+            b'pubKeyData': pubKey.to_string(),
+        }
+    elif isinstance(pubKey, str):
+        return {
+            b'__pubKeyStr__': True,
+            b'pubKeyData': pubKey.encode(),
+        }
+    elif isinstance(pubKey, bytes):
+        return {
+            b'__pubKeyBytes__': True,
+            b'pubKeyData': pubKey,
+        }
+
+def decodePubKey(obj):
+    if b'__pubKeyObj__' in obj:
+        return VerifyingKey.from_string(obj[b'pubKeyData'], curve=SECP256k1)
+    elif b'__pubKeyStr__' in obj:
+        return obj[b'pubKeyData'].decode()
+    elif b'__pubKeyBytes__' in obj:
+        return obj[b'pubKeyData']
+
 def encodeTXInput(txInput):
     if isinstance(txInput, TXInput):
         return {
             b'__txinput__': True,
             b'txId':        txInput.txId,
             b'outIdx':      txInput.outIdx,
-            b'pubKey':      txInput.pubKey.to_string(),
+            b'pubKey':      encodePubKey(txInput.pubKey),
             b'signature':   txInput.signature,
         }
 
@@ -31,5 +56,5 @@ def decodeTXInput(obj):
         txInput.txId      = obj[b'txId']
         txInput.outIdx    = obj[b'outIdx']
         txInput.signature = obj[b'signature']
-        txInput.pubKey    = VerifyingKey.from_string(obj[b'pubKey'], curve=SECP256k1)
+        txInput.pubKey    = decodePubKey(obj[b'pubKey'])
         return txInput

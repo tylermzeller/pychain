@@ -44,7 +44,7 @@ class BlockchainIterator:
         return currentBlock
 
     def hasNext(self):
-        return not (self.currentHash == (b'\x00' * 32))
+        return BlockchainManager().exists(self.currentHash.hex())
 
 class Blockchain:
     def __init__(self, address=None):
@@ -72,7 +72,7 @@ class Blockchain:
         return bm.get(hash.hex())
 
     def getBlockHashes(self):
-        return [block.hash for block in self.iterator()]
+        return [block.hash for block in self.iter_blocks()]
 
     def addBlock(self, block):
         bm = BlockchainManager()
@@ -97,7 +97,7 @@ class Blockchain:
 
         bm = BlockchainManager()
         lastHash = bm.get('l')
-        lastHeight = gm.get(lastHash.hex()).height
+        lastHeight = bm.get(lastHash.hex()).height
         newBlock = block.Block(transactions, lastHash, lastHeight + 1)
         bm.put(newBlock.hash.hex(), newBlock)
         bm.put('l', newBlock.hash)

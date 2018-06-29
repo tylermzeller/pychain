@@ -12,7 +12,13 @@ def main():
         print("\n\nCleaning up...")
         # ecksdee U+1F602
         for bad_python_code in [UTXOSet, WalletManager, BlockchainManager]:
-            bad_python_code().closeDB()
+            try:
+                bad_python_code().closeDB()
+            except Exception as e:
+                # Some dbs require parameters to initialize, and if the db was
+                # never opened (due to an earlier exception) then
+                # closing will throw an exception
+                pass
         print("Cleanup done.")
 if __name__=='__main__':
     main()

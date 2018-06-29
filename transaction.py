@@ -192,7 +192,7 @@ def decodeTX(obj):
     if b'__tx__' in obj:
         tx = Transaction(empty=True)
         tx.vin = [decodeTXInput(v) for v in obj[b'vin']]
-        outDict = { k: decodeTXOutput(v) for k, v in obj[b'outDict'] }
+        outDict = { k: decodeTXOutput(v) for k, v in obj[b'outDict'].items() }
         tx.outDict = OutputDict(d=outDict)
         tx.id = obj[b'id']
         return tx

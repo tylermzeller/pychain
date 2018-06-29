@@ -17,15 +17,14 @@ class AsyncServer(asyncore.dispatcher):
         self.listen(5)
 
     def start(self):
-        print("Looping")
-        print("\n")
-        # if self._server_thread is not None:
-        #     return
-        #
-        # self._server_thread = Thread(target=asyncore.loop, kwargs={'timeout': self._timeout})
-        # self._server_thread.daemon = True
-        # self._server_thread.start()
-        asyncore.loop(timeout=self._timeout)
+        print("Starting server thread")
+        if self._server_thread is not None:
+            return
+
+        self._server_thread = Thread(target=asyncore.loop, kwargs={'timeout': self._timeout})
+        self._server_thread.daemon = True
+        self._server_thread.start()
+        #asyncore.loop(timeout=self._timeout)
 
     def stop(self):
         self.close()
@@ -50,7 +49,6 @@ class AsyncServer(asyncore.dispatcher):
                 self.close()
 
             def handle_read(self):
-                print("Handling read")
                 handler_func(self)
 
         print("Setting read handler")

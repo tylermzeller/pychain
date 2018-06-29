@@ -7,7 +7,7 @@ from time import time
 
 
 class Block:
-    def __init__(self, transactions, prevHash, height, empty=False):
+    def __init__(self, transactions=[], prevHash=b'', height=-1, empty=False):
         if empty:
             return
         self.transactions = transactions
@@ -20,7 +20,6 @@ class Block:
     def hashTransactions(self):
         txs = [dumps(tx) for tx in self.transactions]
         tree = MerkleTree(txs)
-        print("Merkle root %s" % tree.root.data.hex())
         return tree.root.data
 
 def newGenesisBlock(coinbase):
