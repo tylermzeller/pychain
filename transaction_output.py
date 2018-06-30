@@ -10,6 +10,13 @@ class TXOutput:
         elif address:
             self.lock(address)
 
+    def toDict(self):
+        return {
+            'idx': self.idx,
+            'value': self.value,
+            'pubKeyHash': self.pubKeyHash.hex(),
+        }
+
     def lock(self, address):
         # the first byte is the verion # and the last 4 bytes
         # are the version + pubkey checksum

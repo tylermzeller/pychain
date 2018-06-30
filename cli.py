@@ -10,6 +10,7 @@ from utxo_set import UTXOSet
 from wallet_manager import WalletManager
 
 import argparse
+import json
 import random
 
 def createWallet():
@@ -34,13 +35,9 @@ def printChain():
     bc = Blockchain()
     for block in bc.iter_blocks():
         proof = pow.ProofOfWork(block)
-
-        print('\n<block hash=%s>' % block.hash.hex())
-        print('  <prevHash>%s</prevHash>' % (block.prevHash.hex()))
-        print('  <proof>%s</proof>' % (str(proof.validate())))
-        # for tx in block.transactions:
-        #     print(tx)
-        print('</block>\n')
+        if not proof.validate():
+            print("Error! This block could not be validated")
+        print(json.dumps(block.toDict(), indent=2))
 
 def newBlockchain(address):
     if not wallet.validateAddress(address.encode()):

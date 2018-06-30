@@ -7,9 +7,24 @@ class TXInput:
         if empty: return
         self.txId = txId # ID of the transaction whose output is referenced by this input
         self.outIdx = outIdx
-        # pubKey is an object. Use .to_string() for str rep
+        # pubKey is an object. Use .to_string() for bytes rep
         self.pubKey = pubKey
         self.signature = b'\x00' * 64
+
+    def toDict(self):
+        obj = {
+            'refTxId': self.txId.hex(),
+            'refOutIdx': self.outIdx,
+            'signature': self.signature.hex(),
+        }
+        if isinstance(self.pubKey, VerifyingKey):
+            obj['pubKey'] = self.pubKey.to_string()
+        elif isinstance(self.pubKey, bytes):
+            obj['pubKey'] = self.pubKey.hex()
+        elif isinstance(self.pubKey, str):
+            obj['pubKey'] = self.pubKey
+
+        return obj
 
     def usesKey(self, pubKeyHash):
         lockingHash = hashPubKey(self.pubKey)

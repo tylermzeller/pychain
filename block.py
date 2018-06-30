@@ -5,7 +5,6 @@ from util import sha256, toStr
 from pickle import dumps
 from time import time
 
-
 class Block:
     def __init__(self, transactions=[], prevHash=b'', height=-1, empty=False):
         if empty:
@@ -16,6 +15,17 @@ class Block:
         self.timestamp = int(time())
         self.merkleRoot = self.hashTransactions()
         self.nonce, self.hash = ProofOfWork(self).run()
+
+    def toDict(self):
+        return {
+            'hash': self.hash.hex(),
+            'prevHash': self.prevHash.hex(),
+            'timestamp': self.timestamp,
+            'height': self.height,
+            'nonce': self.nonce,
+            'merkleRoot': self.merkleRoot.hex(),
+            'txs': [tx.toDict() for tx in self.transactions],
+        }
 
     def hashTransactions(self):
         txs = [dumps(tx) for tx in self.transactions]

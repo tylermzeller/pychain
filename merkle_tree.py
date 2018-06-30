@@ -1,7 +1,7 @@
 from util import sha256
 
 class MerkleNode:
-    def __init__(self, left, right, data=None):
+    def __init__(self, left=None, right=None, data=None):
         if left is not None and right is not None:
             data = left.data + right.data
         self.data = sha256(data)
@@ -10,10 +10,7 @@ class MerkleNode:
 
 class MerkleTree:
     def __init__(self, data):
-        nodes = []
-
-        for datum in data:
-            nodes.append(MerkleNode(None, None, datum))
+        nodes = [MerkleNode(data=datum) for datum in data]
 
         if len(nodes) == 0:
             raise ValueError("No data given to create a Merkle Tree!")
