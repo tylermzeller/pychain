@@ -30,10 +30,8 @@ def listAddresses():
     for address in addresses:
         print(address)
 
-# TODO: use actual XML (or JSON or whatever) serialization
 def printChain():
-    bc = Blockchain()
-    for block in bc.iter_blocks():
+    for block in Blockchain().iter_blocks():
         proof = pow.ProofOfWork(block)
         if not proof.validate():
             print("Error! This block could not be validated")
@@ -44,8 +42,7 @@ def newBlockchain(address):
         print("Error: Address is not valid")
         return
 
-    bc = Blockchain(address.encode())
-
+    Blockchain().mineBlock([transaction.newCoinbaseTX(address)])
     UTXOSet().reindex()
     print("New blockchain created")
 
