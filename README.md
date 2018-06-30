@@ -3,7 +3,7 @@
 Learning about blockchains from [Jeiwan](https://github.com/Jeiwan/blockchain_go) and porting to Python.
 
 ## DISCLAIMER
-This repository is for personal experimentation and mainly for fun. There is no set process for testing, so code in the master branch has no guarantees of running correctly.
+This repository is for personal experimentation and mainly for fun (you may even find a joke or two written throughout the code!). There is no set process for testing, so code in the master branch has no guarantees of running correctly.
 
 ## Current State
 
@@ -13,13 +13,20 @@ This repository is for personal experimentation and mainly for fun. There is no 
 
 ## Quick Start
 
-## Docker
+## Single Node Using Docker
 ```bash
 $ docker build -t pychain .
 ...
 # -it lets you input characters (CTRL-C, and 'q' to quit)
 # --rm deletes the container upon exit (i.e. deleting your databases)
 $ docker run -it --rm pychain
+```
+
+## P2P Network Using Docker-Compose
+```bash
+$ docker build -t pychain .
+# So far, the only tests have been with 2 nodes on the network.
+$ docker-compose up --scale p2p=2
 ```
 
 ### Creating Wallets
