@@ -45,7 +45,7 @@ class AsyncServer(asyncore.dispatcher):
 
         class Handler(asyncore.dispatcher_with_send):
             def handle_close(self):
-                print("Socket closed")
+                # print("Socket closed")
                 self.close()
 
             def handle_read(self):
@@ -64,5 +64,5 @@ class AsyncServer(asyncore.dispatcher):
             sock.close()
             return
 
-        print("Incoming connection from %s" % repr(addr))
+        # print("Incoming connection from %s" % repr(addr))
         self._sock_read_handler(sock)

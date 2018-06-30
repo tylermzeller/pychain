@@ -31,15 +31,15 @@ def listAddresses():
 
 # TODO: use actual XML (or JSON or whatever) serialization
 def printChain():
-    bc = Blockchain(b'')
+    bc = Blockchain()
     for block in bc.iter_blocks():
         proof = pow.ProofOfWork(block)
 
         print('\n<block hash=%s>' % block.hash.hex())
         print('  <prevHash>%s</prevHash>' % (block.prevHash.hex()))
         print('  <proof>%s</proof>' % (str(proof.validate())))
-        for tx in block.transactions:
-            print(tx)
+        # for tx in block.transactions:
+        #     print(tx)
         print('</block>\n')
 
 def newBlockchain(address):
@@ -92,6 +92,7 @@ def startServer(minerAddress):
         print("No or incorrect mining address. This node is not mining and will not receive rewards.")
 
     network.startServer(minerAddress.encode())
+    printChain()
 
 def createRandomTX():
     addresses = WalletManager().getAddresses()

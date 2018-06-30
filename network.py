@@ -12,7 +12,7 @@ from socket import gethostname, gethostbyname
 from struct import pack
 
 nodeVersion = 1
-nodeAddress = nodeAddress = gethostbyname(gethostname())
+nodeAddress = gethostbyname(gethostname())
 miningAddress = b''
 knownNodes = []
 blocksInTransit = {}
@@ -25,9 +25,11 @@ def sendPayload(address, command, payload):
     port = 7667
     if ':' in address:
         [address, port] = address.split(':')
+        port = int(port)
     sock = p2p.SocketWriter(address, port)
     if sock.isConnected():
         sock.send(payload)
+
 
 def sendAddr(address):
     print("Sending addr to %s" % address)
@@ -41,7 +43,7 @@ def broadcastBlock(block):
         sendBlock(address, block)
 
 def sendBlock(address, block):
-    print("Sending block to %s" % address)
+    print("Sending block %s to %s" % (block.hash.hex(), address))
     command = b'block'
     blck = p2p.block(nodeAddress, encodeBlock(block))
     sendPayload(address, command, blck)
@@ -59,7 +61,7 @@ def sendGetBlocks(address):
     sendPayload(address, command, getblocks)
 
 def sendGetData(address, typ, id):
-    print("Sending getdata to %s" % address)
+    print("Sending getdata of type %s to %s" % (toStr(typ), address))
     command = b'getdata'
     getdata = p2p.getdata(nodeAddress, typ, id)
     sendPayload(address, command, getdata)
@@ -96,8 +98,6 @@ def mineTransactions():
     newBlock = Blockchain().mineBlock(txs)
     UTXOSet().reindex()
 
-    print("Mined a new block %s" % newBlock.hash.hex())
-
     for tx in txs:
         if tx.id in mempool:
             del mempool[tx.id]
@@ -117,8 +117,8 @@ def handleAddr(msg):
     requestBlocks()
 
 def handleBlock(msg):
-    print("Handling block")
     blc = decodeMsg(msg)
+    print("Handling block from %s" % blc['addrFrom'])
     block = decodeBlock(blc['block'])
     addrFrom = blc['addrFrom']
 
@@ -143,9 +143,8 @@ def handleBlock(msg):
 
 
 def handleInv(msg):
-    print("Handling inv")
     inv = decodeMsg(msg)
-    print("Received inv with %d %ss" % (len(inv['items']), toStr(inv['type'])))
+    print("Handling inv with %d %ss from %s" % (len(inv['items']), toStr(inv['type']), inv['addrFrom']))
 
     if len(inv['items']) == 0: return
 
@@ -163,13 +162,13 @@ def handleInv(msg):
 
 
 def handleGetBlocks(msg):
-    print("Handling getblocks")
     getblocks = decodeMsg(msg)
+    print("Handling getblocks from %s" % getblocks['addrFrom'])
     sendInv(getblocks['addrFrom'], b'block', Blockchain().getBlockHashes())
 
 def handleGetData(msg):
-    print("Handling getdata")
     getdata = decodeMsg(msg)
+    print("Handling getdata from %s" % getdata['addrFrom'])
 
     if getdata['type'] == b'block':
         block = Blockchain().getBlock(getdata['id'])
@@ -229,6 +228,7 @@ msgHandlers = {
 
 def startServer(mineAddr):
     global miningAddress
+    global knownNodes
     print("My host: %s" % nodeAddress)
     miningAddress = mineAddr
     print("My mining address %s" % toStr(miningAddress))
@@ -241,18 +241,28 @@ def startServer(mineAddr):
 
     print("Known nodes: %s" % str(knownNodes))
 
-    # We want blocks to be mined before starting the server
-    Blockchain(miningAddress)
-
     sr = p2p.SocketReader(nodeAddress)
     sr.setMsgHandlers(msgHandlers)
     sr.start()
 
-    requestBlocks()
+    # mine the genesis block
+    Blockchain().mineBlock([newCoinbaseTX(miningAddress)])
+    UTXOSet().reindex()
+    bm = BlockchainManager()
+    genesisHash = bm.get('l')
+    genesisBlock = bm.get(genesisHash.hex())
+    for node in knownNodes:
+        if node != nodeAddress:
+            sendInv(node, b'block', [genesisBlock.hash])
 
-    done = False
-    while not done:
+    #done = False
+    #while not done:
+    while 1:
         mineTransactions()
+        if Blockchain().getBestHeight() >= 5:
+            sr.stop()
+            break
+
         # writing the loop this way supports
         # attaching/detaching tty terminals (e.g. via Docker)
         # if canWaitKey():

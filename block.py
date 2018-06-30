@@ -38,6 +38,7 @@ def encodeBlock(block):
                 b'timestamp':    block.timestamp,
                 b'prevHash':     block.prevHash,
                 b'hash':         block.hash,
+                b'merkleRoot':   block.merkleRoot,
                 b'nonce':        block.nonce,
                 b'height':       block.height,
         }
@@ -50,6 +51,7 @@ def decodeBlock(obj):
         block.prevHash =    obj[b'prevHash']
         block.height =      obj[b'height']
         block.hash =        obj[b'hash']
+        block.merkleRoot =  obj[b'merkleRoot']
         block.nonce =       obj[b'nonce']
         block.transactions = [decodeTX(txObj) for txObj in obj[b'transactions']]
         return block

@@ -71,7 +71,7 @@ def readMsg(sock):
         return None
 
     msglen = unpack('>I', msglen)[0]
-    print("Receiving a message of length %d" % msglen)
+    # print("Receiving a message of length %d" % msglen)
     return recvall(sock, msglen)
 
 def formatCommand(command):
@@ -106,7 +106,6 @@ class SocketReader:
         self.server.stop()
 
     def handle_read(self, sock):
-        print("Reading socket data")
         msg = readMsg(sock)
         if not msg:
             print("Found no data")
@@ -140,6 +139,16 @@ class SocketWriter:
         return self.sock is not None
 
     def send(self, data):
-        print("Sending data")
-        self.sock.sendall(data)
+        error = False
+        try:
+            self.sock.sendall(data)
+        except socket.timeout:
+            print("Caught timeout")
+            error = True
+            self.sock.shutdown("SHUT_RDWR")
+        except socket.error as err:
+            print("Error %d: %s" % err)
+            error = True
+            self.sock.shutdown("SHUT_RDWR")
         self.sock.close()
+        return error

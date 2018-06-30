@@ -36,6 +36,8 @@ class ProofOfWork:
         return nonce, powHash
 
     def validate(self):
+        # TODO: can calc merkle root here to verify there was
+        # no bamboozle in transit
         data = self.prepareData(self.block.nonce)
         hash = sha256(data)
         hashInt = int.from_bytes(hash, 'big')

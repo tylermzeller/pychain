@@ -15,13 +15,17 @@ class BlockchainManager:
             return key in self.db
 
         def put(self, key, value):
+            # explicily reject falsey inputs
+            if not key:
+                return
             self.db[key] = value
 
         def get(self, key):
             return self.db[key]
 
         def closeDB(self):
-            self.db.close()
+            if self.db:
+                self.db.close()
 
     instance = None
     def __init__(self):
@@ -33,8 +37,12 @@ class BlockchainManager:
 
 class BlockchainIterator:
     def __init__(self, currentHash=b''):
+        bm = BlockchainManager()
         if not currentHash:
-            currentHash = BlockchainManager().get('l')
+            if bm.exists('l'):
+                currentHash = BlockchainManager().get('l')
+            else:
+                currentHash = b''
         self.currentHash = currentHash
 
     def next(self):
@@ -47,22 +55,10 @@ class BlockchainIterator:
         return BlockchainManager().exists(self.currentHash.hex())
 
 class Blockchain:
-    def __init__(self, address=None):
-        bm = BlockchainManager()
-        if not bm.exists('l'):
-            print("\nEmpty blockchain. Creating genesis.")
-            if not address:
-                print("Error: Address is required.")
-                raise Exception("Blockchain not initialized")
-            coinbase = transaction.newCoinbaseTX(address)
-            print("Created coinbase with reward going to %s" % toStr(address))
-            genesis = block.newGenesisBlock(coinbase)
-            print("Gensis block hash: %s\n" % genesis.hash.hex())
-            bm.put(genesis.hash.hex(), genesis)
-            bm.put('l', genesis.hash)
-
     def getBestHeight(self):
         bm = BlockchainManager()
+        if not bm.exists('l'):
+            return -1
         return bm.get(bm.get('l').hex()).height
 
     def getBlock(self, hash):
@@ -74,38 +70,59 @@ class Blockchain:
     def getBlockHashes(self):
         return [block.hash for block in self.iter_blocks()]
 
+    def updateTip(self, block):
+        bm = BlockchainManager()
+        if bm.exists('l'):
+            lastHash = bm.get('l')
+            lastBlock = bm.get(lastHash.hex())
+
+            if block.height > lastBlock.height:
+                bm.put('l', block.hash)
+        else:
+            bm.put('l', block.hash)
+
     def addBlock(self, block):
         bm = BlockchainManager()
         if bm.exists(block.hash.hex()):
             return
 
         bm.put(block.hash.hex(), block)
-
-        lastHash = bm.get('l')
-        lastBlock = bm.get(lastHash.hex())
-
-        if block.height > lastBlock.height:
-            bm.put('l', block.hash)
+        self.updateTip(block)
 
     def mineBlock(self, transactions):
+        foundCoinbase = False
         for tx in transactions:
             prevTXs = self.getPrevTransactions(tx)
             if not tx.verify(prevTXs):
                 print("Error verifying transactions")
                 print(tx)
                 return
+            if tx.isCoinbase():
+                foundCoinbase = True
+
+        if not foundCoinbase:
+            raise ValueError("Error: Coinbase must be included in list of txs to mine block.")
 
         bm = BlockchainManager()
-        lastHash = bm.get('l')
-        lastHeight = bm.get(lastHash.hex()).height
-        newBlock = block.Block(transactions, lastHash, lastHeight + 1)
-        bm.put(newBlock.hash.hex(), newBlock)
-        bm.put('l', newBlock.hash)
+        if not bm.exists('l'):
+            print("\nEmpty blockchain. Creating genesis.")
+            if len(transactions) > 1:
+                raise ValueError("Error: should only be a single tx in the genesis block.")
+            elif len(transactions) == 0:
+                coinbase = transaction.newCoinbaseTX(address)
+            elif len(transactions) == 1:
+                coinbase = transactions[0]
+            newBlock = block.newGenesisBlock(coinbase)
+        else:
+            lastHash = bm.get('l')
+            lastHeight = bm.get(lastHash.hex()).height
+            newBlock = block.Block(transactions, lastHash, lastHeight + 1)
+        print("Mined a new block %s" % newBlock.hash.hex())
+        self.addBlock(newBlock)
         return newBlock
 
     def iterator(self):
-        bm = BlockchainManager()
-        return BlockchainIterator(bm.get('l'))
+        return BlockchainIterator()
 
     def iter_blocks(self):
         chainIterator = self.iterator()
