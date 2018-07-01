@@ -55,11 +55,6 @@ class BlockchainIterator:
         return BlockchainManager().exists(self.currentHash.hex())
 
 class Blockchain:
-    def getBestHeight(self):
-        bm = BlockchainManager()
-        if not bm.exists('l'):
-            return -1
-        return bm.get(bm.get('l').hex()).height
 
     def getBlock(self, hash):
         bm = BlockchainManager()
@@ -67,19 +62,30 @@ class Blockchain:
             return None
         return bm.get(hash.hex())
 
+    def getTip(self):
+        bm = BlockchainManager()
+        if not bm.exists('l'):
+            return None
+        return bm.get(bm.get('l').hex())
+
+    def setTip(self, block):
+        bm = BlockchainManager()
+        lastBlock = self.getTip()
+        if lastBlock:
+            if block.height > lastBlock.height:
+                bm.put('l', block.hash)
+            else:
+                bm.put('l', block.hash)
+
+    def getBestHeight(self):
+        lastBlock = self.getTip()
+        if not lastBlock:
+            return -1
+            return lastBlock.height
+
     def getBlockHashes(self):
         return [block.hash for block in self.iter_blocks()]
 
-    def updateTip(self, block):
-        bm = BlockchainManager()
-        if bm.exists('l'):
-            lastHash = bm.get('l')
-            lastBlock = bm.get(lastHash.hex())
-
-            if block.height > lastBlock.height:
-                bm.put('l', block.hash)
-        else:
-            bm.put('l', block.hash)
 
     def addBlock(self, block):
         bm = BlockchainManager()
@@ -87,7 +93,7 @@ class Blockchain:
             return
 
         bm.put(block.hash.hex(), block)
-        self.updateTip(block)
+        self.setTip(block)
 
     def mineBlock(self, transactions):
         foundCoinbase = False
@@ -104,7 +110,9 @@ class Blockchain:
             raise ValueError("Error: Coinbase must be included in list of txs to mine block.")
 
         bm = BlockchainManager()
-        if not bm.exists('l'):
+        lastBlock = self.getTip()
+
+        if not lastBlock:
             print("\nEmpty blockchain. Creating genesis.")
             if len(transactions) > 1:
                 raise ValueError("Error: should only be a single tx in the genesis block.")
@@ -114,9 +122,8 @@ class Blockchain:
                 coinbase = transactions[0]
             newBlock = block.newGenesisBlock(coinbase)
         else:
-            lastHash = bm.get('l')
-            lastHeight = bm.get(lastHash.hex()).height
-            newBlock = block.Block(transactions, lastHash, lastHeight + 1)
+            newBlock = block.Block(transactions, lastBlock.hash, lastBlock.height + 1)
+            
         print("Mined a new block %s" % newBlock.hash.hex())
         self.addBlock(newBlock)
         return newBlock

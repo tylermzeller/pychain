@@ -246,11 +246,9 @@ def startServer(mineAddr):
     sr.start()
 
     # mine the genesis block
-    Blockchain().mineBlock([newCoinbaseTX(miningAddress)])
+    bc = Blockchain()
+    genesisBlock = bc.mineBlock([newCoinbaseTX(miningAddress)])
     UTXOSet().reindex()
-    bm = BlockchainManager()
-    genesisHash = bm.get('l')
-    genesisBlock = bm.get(genesisHash.hex())
     for node in knownNodes:
         if node != nodeAddress:
             sendInv(node, b'block', [genesisBlock.hash])
@@ -259,7 +257,7 @@ def startServer(mineAddr):
     #while not done:
     while 1:
         mineTransactions()
-        if Blockchain().getBestHeight() >= 5:
+        if bc.getBestHeight() >= 5:
             sr.stop()
             break
 
