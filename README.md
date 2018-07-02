@@ -7,7 +7,7 @@ This repository is for personal experimentation and mainly for fun (you may even
 
 ## Current State
 
-  * Persistence is accomplished using the [shelve](https://docs.python.org/3/library/shelve.html) library. With this library, there is no need to serialize/unserialize blocks or UTXOs!
+  * Persistence is accomplished using the [Plyvel](https://plyvel.readthedocs.io/en/latest/index.html) library. Previously this was done using [shelve](https://docs.python.org/3/library/shelve.html). Moving from Shelve to Plyvel, we lost the convenience of letting the database handle serialization of blocks, UTXOs, and wallets. However, Plyvel should be a more robust and efficient database, giving us snapshots, sorted iterators, write batches, and more!
   * Public/Private key cryptography (verifying/signing) is accomplished through the [ecdsa](https://github.com/warner/python-ecdsa) library. See their README for security considerations.
   * Blocks only support PTPKH transactions. No scripting. Just locking and unlocking outputs.
 
@@ -25,8 +25,8 @@ $ docker run -it --rm pychain
 ## P2P Network Using Docker-Compose
 ```bash
 $ docker build -t pychain .
-# So far, the only tests have been with 2 nodes on the network.
-$ docker-compose up --scale p2p=2
+# So far, successful tests have been confirmed with 3 nodes on the network.
+$ docker-compose up --scale p2p=3
 ```
 
 ### Creating Wallets
@@ -62,22 +62,34 @@ Done
 `print-blockchain`
 ```bash
 $ ./gucci_main.py p
-<block hash=00004a43389100408a3a3566c4d15ae57874e2986a84d46902a43fb4b52212d5>
-  <prevHash>0000000000000000000000000000000000000000000000000000000000000000</prevHash>
-  <proof>True</proof>
-  <tx id=e2b37d8533f7ef6b4d4690055c8e558373c9a261629bff9c6591c7a1e52e5ab9>
-    <input i=0>
-      <outputID></outputID>
-      <outIdx>-1</outIdx>
-      <signature>00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000</signature>
-      <pubKey>5050ca76ff36437d2c163d0654f9293cffd3533ce2bff115cfaae3895cf102095827b24c7cc55652</pubkey>
-    </input>
-    <output i=0>
-      <value>50</value>
-      <pubKeyHash>a207d7e452a061b175a908de217b58e35230d92d</pubKeyHash>
-    </output>
-  </tx>
-</block>
+{
+  "hash": "000006a4c3c01d76ac261a2cd5c6ac6297b2bd4dc4984bbef91d5d9d624e6e78",
+  "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "timestamp": 1530423399,
+  "height": 0,
+  "nonce": 370089,
+  "merkleRoot": "af24b2c82707d87a608fe21c830a11a63960fc585816d972cc7d42725a7799ac",
+  "txs": [
+    {
+      "id": "5fbac38f51bc0daa4b2d261a8d49a15cd8a68e4c10ab3e0c9d33093a756561b5",
+      "inputs": [
+        {
+          "refTxId": "",
+          "refOutIdx": -1,
+          "signature": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "pubKey": "1995389d31069c544da983a95027e9319d93cbf81fd38c3786f115f9a9938547d2df7272d1258bb3"
+      }
+      ],
+      "outputs": [
+        {
+          "idx": 0,
+          "value": 50,
+          "pubKeyHash": "9f9a193d56e9599090417053ed6450ff93fed822"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ### Get Wallet balance

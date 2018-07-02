@@ -2,13 +2,10 @@ import base58
 from util import sha256, ripemd160, intToBytes
 
 import shelve
-from ecdsa import SigningKey, SECP256k1
+from ecdsa import SigningKey, VerifyingKey, SECP256k1
 
 addressChecksumLength = 4
-walletFile = 'wallet.db'
 VERSION = b'\x00'
-
-wallets = {}
 
 def newKeyPair():
     priv = SigningKey.generate(curve=SECP256k1)
@@ -29,9 +26,13 @@ def validateAddress(address):
     return checksum(version + pubKeyHash) == chksum
 
 class Wallet:
-    def __init__(self, privKey, pubKey):
-        self.privateKey = privKey
-        self.publicKey  = pubKey
+    def __init__(self, privKey=None, pubKey=None):
+        if privKey is None:
+            self.privateKey, self.publicKey = newKeyPair()
+        elif pubKey is None:
+            self.privateKey, self.publiKey = privKey, privKey.get_verifying_key()
+        else:
+            self.privateKey, self.publicKey = privKey, pubKey
 
     def getAddress(self):
         pubKeyHash = hashPubKey(self.publicKey)
@@ -39,5 +40,16 @@ class Wallet:
         fullPayload = versionedPayload + checksum(versionedPayload)
         return base58.encode(fullPayload)
 
-def newWallet():
-    return Wallet(*newKeyPair())
+def encodeWallet(w):
+    if isinstance(w, Wallet):
+        return {
+            b'__wallet__': True,
+            b'privateKey': w.privateKey.to_string(),
+            b'publicKey':  w.publicKey.to_string(),
+        }
+
+def decodeWallet(w):
+    if b'__wallet__' in w:
+        sk = SigningKey.from_string(w[b'privateKey'], curve=SECP256k1)
+        vk = VerifyingKey.from_string(w[b'publicKey'], curve=SECP256k1)
+        return Wallet(sk, vk)

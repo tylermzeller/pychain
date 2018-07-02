@@ -5,6 +5,7 @@ services:
     ports:
       - 7667
     environment:
+      - BASEDBPATH=/tmp/
       - SERVICENAME=pychain_p2p
       - NUMNODES=3
       - PYTHONUNBUFFERED=1

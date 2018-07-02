@@ -1,35 +1,27 @@
-from util import toStr
+from database_manager import DBManager
 
+import util
 import wallet
-import time
-import shelve
-
-walletFile = 'wallets'
 
 class WalletManager:
-    class __WalletManager:
-        def __init__(self):
-            self.db = shelve.open(walletFile)
-
-        def createWallet(self):
-            w = wallet.newWallet()
-            address = toStr(w.getAddress())
-            self.db[address] = w
-            return w
-
-        def getAddresses(self):
-            return [address for address in self.db]
-
-        def getWallet(self, address):
-            return self.db[toStr(address)]
-
-        def closeDB(self):
-            self.db.close()
-
-    instance = None
     def __init__(self):
-        if not WalletManager.instance:
-            WalletManager.instance = WalletManager.__WalletManager()
+        self.wallets_db = DBManager().get('wallets')
 
-    def __getattr__(self, name):
-        return getattr(self.instance, name)
+    # creates a new wallet and saves it to the database
+    def create_wallet(self):
+        w = wallet.Wallet()
+        address = w.getAddress()
+        encodedWallet = util.encodeMsg(wallet.encodeWallet(w))
+        self.wallets_db.put(address, w)
+        return w
+
+    def get_addresses(self):
+        with self.wallets_db.snapshot() as s, s.iterator(include_values=False) as it:
+            return [util.toStr(address) for address in it]
+
+    def get_wallet(self, address):
+        if isinstance(address, str):
+            address = address.encode()
+        if self.wallets_db.exists(address):
+            return util.decodeMsg(self.wallets_db.get(address), decoder=wallet.decodeWallet)
+        return None

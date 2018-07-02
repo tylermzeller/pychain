@@ -1,68 +1,68 @@
-from blockchain import Blockchain
+import transaction_output as txout
+import util
 
-import shelve
+from blockchain import Blockchain
+from database_manager import DBManager
+
 from binascii import unhexlify
 
-utxoFile = 'utxoset'
-
 class UTXOSet:
-    class __UTXOSet:
-        def __init__(self):
-            self.bc = Blockchain()
-            self.db = shelve.open(utxoFile)
+    def __init__(self):
+        self.utxos_db = DBManager().get('utxos')
 
-        def reindex(self):
-            # empty the current indexed UTXOs
-            self.db.clear()
-            # get the new UTXOs
-            UTXO = self.bc.findUTXO()
+    def reindex(self):
+        # empty the current indexed UTXOs
+        self.utxos_db.clear()
+        # get the new UTXOs
+        UTXO = Blockchain().findUTXO()
+        with self.utxos_db.write_batch() as wb:
             for txId, txOutputs in UTXO.items():
                 # add them to the cache
-                self.db[txId] = txOutputs
+                encodedTXOutputs = util.encodeMsg(txOutputs, encoder=txout.encodeTXOutput)
+                wb.put(txId, encodedTXOutputs)
 
-        def update(self, block):
+    def update(self, block):
+        with self.utxos_db.snapshot() as s, self.utxo_db.write_batch() as wb:
             for tx in block.transactions:
                 # coinbase txs don't have inputs, duh
                 if not tx.isCoinbase():
                     # for each input, remove the output that it spends from the UTXO set
                     for txInput in tx.vin:
-                        txOutputs = self.db[txInput.txId.hex()]
-                        updatedOutputs = [txOutput for txOutput in txOutputs if txOutput.idx != txInput.outIdx]
+                        txOutputs = util.decodeMsg(s.get(txInput.txId), decoder=txout.decodeTXOutput)
+                        updatedOutputs = [txOutput for txOutput in txOutputs if txOutput[b'idx'] != txInput.outIdx]
 
                         if len(updatedOutputs) == 0:
-                            del self.db[txInput.txId.hex()]
+                            wb.delete(txInput.txId)
                         else:
-                            self.db[txInput.txId.hex()] = updatedOutputs
+                            encodedOutputs = util.encodeMsg(updatedOutputs)
+                            wb.put(txInput.txId, encodedOutputs)
 
                 # add new outputs to the UTXO set
-                self.db[tx.id.hex()] = list(tx.outDict.values())
+                encodedNewOutputs = util.encodeMsg(list(tx.outDict.values()), encoder=txout.encodeTXOutput)
+                wb.put(tx.id, encodedNewOutputs)
 
-        def findSpendableOutputs(self, pubKeyHash, amount):
-            unspentOutIndices = {}
-            accumulated = 0
+    def findSpendableOutputs(self, pubKeyHash, amount):
+        unspentOutIndices = {}
+        accumulated = 0
 
-            for txId in self.db:
-                for txOutput in self.db[txId]:
+        with self.utxos_db.snapshot() as s, s.iterator() as it:
+            for txId, encodedOutputs in it:
+                unspentOutputs = util.decodeMsg(encodedOutputs, decoder=txout.decodeTXOutput)
+                for txOutput in unspentOutputs:
                     if txOutput.isLockedWithKey(pubKeyHash) and accumulated < amount:
                         accumulated += txOutput.value
-                        rawId = unhexlify(txId)
-                        if rawId not in unspentOutIndices:
-                            unspentOutIndices[rawId] = []
-                        unspentOutIndices[rawId].append(txOutput.idx)
+                        if txId not in unspentOutIndices:
+                            unspentOutIndices[txId] = []
+                        unspentOutIndices[txId].append(txOutput.idx)
 
-            return accumulated, unspentOutIndices
+        return accumulated, unspentOutIndices
 
-        def findUTXO(self, pubKeyHash):
-            return [txOutput for txId in self.db for txOutput in self.db[txId] if txOutput.isLockedWithKey(pubKeyHash)]
+    def findUTXO(self, pubKeyHash):
+        UTXO = []
+        # I'm skeptical of the performance of
+        with self.utxos_db.snapshot() as s, s.iterator(include_keys=False) as it:
+            for encodedOutputs in it:
+                unspentOutputs = util.decodeMsg(encodedOutputs, decoder=txout.decodeTXOutput)
+                UTXO.extend([txOutput for txOutput in unspentOutputs if txOutput.isLockedWithKey(pubKeyHash)])
 
-        def closeDB(self):
-            self.db.close()
-
-    instance = None
-    # TODO: remove blockchain arg
-    def __init__(self, blockchain=None):
-        if not UTXOSet.instance:
-            UTXOSet.instance = UTXOSet.__UTXOSet()
-
-    def __getattr__(self, name):
-        return getattr(self.instance, name)
+        return UTXO

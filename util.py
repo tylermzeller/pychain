@@ -1,5 +1,7 @@
 import hashlib
-from msgpack import packb, unpackb
+import os
+import sys
+import msgpack
 from struct import pack
 
 def int64ToBinary(i):
@@ -31,20 +33,24 @@ def toStr(obj):
 def isSubstringOf(a, b):
     return b.find(a) == 0
 
+# msgpack serialize
 def encodeMsg(d, encoder=None):
-    return packb(d, default=encoder, use_bin_type=True)
+    return msgpack.packb(d, default=encoder, use_bin_type=True)
 
+# msgpack deserialize
 def decodeMsg(msg, decoder=None):
-    return unpackb(msg, object_hook=decoder, raw=False)
+    return msgpack.unpackb(msg, object_hook=decoder, raw=False)
+
+def decodeList(msg, decoder):
+    encodedObjs = decodeMsg(msg)
+    return [decoder(obj) for obj in encodedObjs]
 
 def canWaitKey():
-    import sys
     return sys.stdin.isatty()
 # https://stackoverflow.com/a/34956791
 # Cross platform, blocking function to get a pressed key
 def waitKey():
     ''' Wait for a key press on the console and return it. '''
-    import os, sys
     result = None
     if os.name == 'nt':
         import msvcrt
