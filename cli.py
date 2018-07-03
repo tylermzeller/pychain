@@ -15,14 +15,14 @@ import random
 
 def createWallet():
     wm = WalletManager()
-    w = wm.createWallet()
+    w = wm.create_wallet()
     newAddress = toStr(w.getAddress())
     print("New address: %s" % newAddress)
     return newAddress
 
 def listAddresses():
     wm = WalletManager()
-    addresses = wm.getAddresses()
+    addresses = wm.get_addresses()
     if not addresses:
         print("Error: Could not get wallets")
         return
@@ -89,9 +89,10 @@ def startServer(minerAddress):
     printChain()
 
 def createRandomTX():
-    addresses = WalletManager().getAddresses()
+    wm = WalletManager()
+    addresses = wm.get_addresses()
     while len(addresses) < 20:
-        w = WalletManager().createWallet()
+        w = wm.create_wallet()
         addresses.append(toStr(w.getAddress()))
 
     random.shuffle(addresses)

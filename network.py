@@ -2,7 +2,7 @@ import node_discovery
 import p2p_interface as p2p
 from async_server import AsyncServer
 from block import encodeBlock, decodeBlock
-from blockchain import Blockchain, BlockchainManager
+from blockchain import Blockchain
 from node_discovery import discoverNodes
 from transaction import encodeTX, decodeTX, newCoinbaseTX
 from util import encodeMsg, decodeMsg, waitKey, canWaitKey, toStr

@@ -80,7 +80,7 @@ class DBManager:
                 raise ValueError("%s is not a valid db name" % str(db))
 
             if self.db_refs[db] is None:
-                self.db_refs = DBInterface(db)
+                self.db_refs[db] = DBInterface(db)
 
             return self.db_refs[db]
 

@@ -1,7 +1,8 @@
 import block
 import transaction
+import util
 from database_manager import DBManager
-from util import toStr
+
 
 class BlockchainIterator:
     def __init__(self, currentHash=b''):
@@ -12,7 +13,7 @@ class BlockchainIterator:
 
     def next(self):
         encodedBlock = self.blocks_db.get(self.currentHash)
-        currentBlock = block.decodeBlock(encodedBlock)
+        currentBlock = util.decodeBlock(encodedBlock, decoder=block.decodeBlock)
         self.currentHash = currentBlock.prevHash
         return currentBlock
 
@@ -26,13 +27,13 @@ class Blockchain:
     def getBlock(self, hash):
         if not self.blocks_db.exists(hash):
             return None
-        return block.decodeBlock(self.blocks_db.get(hash))
+        return util.decodeMsg(self.blocks_db.get(hash), decoder=block.decodeBlock)
 
     def getTip(self):
         if not self.blocks_db.exists(b'l'):
             return None
         encodedBlock = self.blocks_db.get(self.blocks_db.get(b'l'))
-        return block.decodeBlock(encodedBlock)
+        return util.decodeMsg(encodedBlock, decoder=block.decodeBlock)
 
     def setTip(self, blk):
         lastBlock = self.getTip()
@@ -52,10 +53,10 @@ class Blockchain:
         return [block.hash for block in self.iter_blocks()]
 
     def addBlock(self, blk):
-        if self.blocks_db.exists(block.hash):
+        if self.blocks_db.exists(blk.hash):
             return
 
-        encoded_block = block.encodeBlock(blk)
+        encoded_block = util.encodeMsg(blk, encoder=block.encodeBlock)
         self.blocks_db.put(blk.hash, encoded_block)
         self.setTip(blk)
 

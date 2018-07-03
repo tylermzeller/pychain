@@ -11,8 +11,8 @@ class WalletManager:
     def create_wallet(self):
         w = wallet.Wallet()
         address = w.getAddress()
-        encodedWallet = util.encodeMsg(wallet.encodeWallet(w))
-        self.wallets_db.put(address, w)
+        encoded_wallet = util.encodeMsg(wallet.encodeWallet(w))
+        self.wallets_db.put(address, encoded_wallet)
         return w
 
     def get_addresses(self):
