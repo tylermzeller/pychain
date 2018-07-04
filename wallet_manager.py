@@ -16,7 +16,7 @@ class WalletManager:
         return w
 
     def get_addresses(self):
-        with self.wallets_db.snapshot() as s, s.iterator(include_values=False) as it:
+        with self.wallets_db.snapshot() as s, s.iterator(include_value=False) as it:
             return [util.toStr(address) for address in it]
 
     def get_wallet(self, address):

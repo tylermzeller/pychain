@@ -13,7 +13,7 @@ class BlockchainIterator:
 
     def next(self):
         encodedBlock = self.blocks_db.get(self.currentHash)
-        currentBlock = util.decodeBlock(encodedBlock, decoder=block.decodeBlock)
+        currentBlock = block.decodeBlock(util.decodeMsg(encodedBlock))
         self.currentHash = currentBlock.prevHash
         return currentBlock
 

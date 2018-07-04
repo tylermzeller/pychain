@@ -45,24 +45,21 @@ class UTXOSet:
         unspentOutIndices = {}
         accumulated = 0
 
-        with self.utxos_db.snapshot() as s, s.iterator() as it:
-            for txId, encodedOutputs in it:
-                unspentOutputs = util.decodeMsg(encodedOutputs, decoder=txout.decodeTXOutput)
-                for txOutput in unspentOutputs:
-                    if txOutput.isLockedWithKey(pubKeyHash) and accumulated < amount:
-                        accumulated += txOutput.value
-                        if txId not in unspentOutIndices:
-                            unspentOutIndices[txId] = []
-                        unspentOutIndices[txId].append(txOutput.idx)
+        for txId, encodedOutputs in self.utxos_db.iter_items():
+            unspentOutputs = [txout.decodeTXOutput(obj) for obj in util.decodeMsg(encodedOutputs)]
+            for txOutput in unspentOutputs:
+                if txOutput.isLockedWithKey(pubKeyHash) and accumulated < amount:
+                    accumulated += txOutput.value
+                    if txId not in unspentOutIndices:
+                        unspentOutIndices[txId] = []
+                    unspentOutIndices[txId].append(txOutput.idx)
 
         return accumulated, unspentOutIndices
 
     def findUTXO(self, pubKeyHash):
         UTXO = []
-        # I'm skeptical of the performance of
-        with self.utxos_db.snapshot() as s, s.iterator(include_keys=False) as it:
-            for encodedOutputs in it:
-                unspentOutputs = util.decodeMsg(encodedOutputs, decoder=txout.decodeTXOutput)
-                UTXO.extend([txOutput for txOutput in unspentOutputs if txOutput.isLockedWithKey(pubKeyHash)])
+        for encodedOutputs in self.utxos_db.iter_values():
+            unspentOutputs = txout.decodeTXOutput(util.decodeMsg(encodedOutputs))
+            UTXO.extend([txOutput for txOutput in unspentOutputs if txOutput.isLockedWithKey(pubKeyHash)])
 
         return UTXO

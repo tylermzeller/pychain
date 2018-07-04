@@ -2,7 +2,7 @@ import os
 import plyvel
 
 # WARNING: you should NEVER use the /tmp directory for persistence
-# in a production environment. You should except the contents of
+# in a production environment. You should expect the contents of
 # that dir to be erased by the OS periodically.
 base_db_path = os.getenv('DBDBPATH', default='/tmp/')
 
@@ -31,6 +31,15 @@ class DBInterface:
         self._check_values(key)
         return self.db.get(key, b'') != b''
 
+    def snapshot(self):
+        return self.db.snapshot
+
+    def write_batch(self):
+        return self.db.write_batch
+
+    def iterator(self):
+        return self.db.iterator
+
     def put(self, key, value):
         self._check_open()
         self._check_values(key, value)
@@ -46,19 +55,24 @@ class DBInterface:
 
         return self.db.get(key, b'')
 
+    def iter_items(self):
+        with self.db.snapshot() as s, s.iterator() as it:
+            for kvp in it:
+                yield kvp
+
     def iter_keys(self):
-        with self.db.snapshot() as s, s.iterator(include_values=False) as it:
+        with self.db.snapshot() as s, s.iterator(include_value=False) as it:
             for key in it:
                 yield key
 
     def iter_values(self):
-        with self.db.snapshot() as s, s.iterator(include_keys=False) as it:
+        with self.db.snapshot() as s, s.iterator(include_key=False) as it:
             for value in it:
                 yield value
 
     def clear(self):
         self._check_open()
-        with self.db.snapshot() as s, self.db.write_batch() as wb, s.iterator(include_values=False) as it:
+        with self.db.snapshot() as s, self.db.write_batch() as wb, s.iterator(include_value=False) as it:
             for key in it:
                 wb.delete(key)
 
