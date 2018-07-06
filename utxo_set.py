@@ -46,7 +46,7 @@ class UTXOSet:
         accumulated = 0
 
         for txId, encodedOutputs in self.utxos_db.iter_items():
-            unspentOutputs = [txout.decodeTXOutput(obj) for obj in util.decodeMsg(encodedOutputs)]
+            unspentOutputs = util.decodeMsg(encodedOutputs, decoder=txout.decodeTXOutput)
             for txOutput in unspentOutputs:
                 if txOutput.isLockedWithKey(pubKeyHash) and accumulated < amount:
                     accumulated += txOutput.value
@@ -59,7 +59,7 @@ class UTXOSet:
     def findUTXO(self, pubKeyHash):
         UTXO = []
         for encodedOutputs in self.utxos_db.iter_values():
-            unspentOutputs = txout.decodeTXOutput(util.decodeMsg(encodedOutputs))
+            unspentOutputs = util.decodeMsg(encodedOutputs, decoder=txout.decodeTXOutput)
             UTXO.extend([txOutput for txOutput in unspentOutputs if txOutput.isLockedWithKey(pubKeyHash)])
 
         return UTXO

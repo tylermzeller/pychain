@@ -31,14 +31,14 @@ class DBInterface:
         self._check_values(key)
         return self.db.get(key, b'') != b''
 
-    def snapshot(self):
-        return self.db.snapshot
+    def snapshot(self, *args, **kwargs):
+        return self.db.snapshot(*args, **kwargs)
 
-    def write_batch(self):
-        return self.db.write_batch
+    def write_batch(self, *args, **kwargs):
+        return self.db.write_batch(*args, **kwargs)
 
-    def iterator(self):
-        return self.db.iterator
+    def iterator(self, *args, **kwargs):
+        return self.db.iterator(*args, **kwargs)
 
     def put(self, key, value):
         self._check_open()
