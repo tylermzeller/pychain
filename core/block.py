@@ -55,7 +55,6 @@ def encodeBlock(block):
 
 def decodeBlock(obj):
     from transaction import decodeTX
-    print(obj)
     if b'__block__' in obj:
         block = Block(empty=True)
         block.timestamp =   obj[b'timestamp']

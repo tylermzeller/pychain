@@ -6,7 +6,7 @@ services:
       - 7667
     environment:
       - SERVICENAME=pychain_p2p
-      - NUMNODES=3
+      - NUMNODES=4
       - PYTHONUNBUFFERED=1
     networks:
       - web

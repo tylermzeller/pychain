@@ -27,7 +27,7 @@ class Blockchain:
     def getBlock(self, hash):
         if not self.blocks_db.exists(hash):
             return None
-        return util.decodeMsg(self.blocks_db.get(hash), decoder=block.decodeBlock)
+        return block.decodeBlock(util.decodeMsg(self.blocks_db.get(hash)))
 
     def getTip(self):
         if not self.blocks_db.exists(b'l'):
@@ -56,7 +56,7 @@ class Blockchain:
         if self.blocks_db.exists(blk.hash):
             return
 
-        encoded_block = util.encodeMsg(blk, encoder=block.encodeBlock)
+        encoded_block = util.encodeMsg(block.encodeBlock(blk))
         self.blocks_db.put(blk.hash, encoded_block)
         self.setTip(blk)
 

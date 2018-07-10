@@ -24,7 +24,6 @@ class AsyncServer(asyncore.dispatcher):
         self._server_thread = Thread(target=asyncore.loop, kwargs={'timeout': self._timeout})
         self._server_thread.daemon = True
         self._server_thread.start()
-        #asyncore.loop(timeout=self._timeout)
 
     def stop(self):
         self.close()

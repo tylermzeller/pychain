@@ -31,11 +31,12 @@ def listAddresses():
         print(address)
 
 def printChain():
-    for block in Blockchain().iter_blocks():
+    for i, block in enumerate(Blockchain().iter_blocks()):
         proof = pow.ProofOfWork(block)
         if not proof.validate():
             print("Error! This block could not be validated")
-        print(json.dumps(block.toDict(), indent=2))
+        #print(json.dumps(block.toDict(), indent=2))
+        print(block.hash.hex())
 
 def newBlockchain(address):
     if not wallet.validateAddress(address.encode()):
