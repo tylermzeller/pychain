@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+SRC_ROOT=$(dirname "${BASH_SOURCE}")/..
+IMAGE_NAME="pychain"
+DOCKERFILE_PATH=${SRC_ROOT}
+NUM_NODES=2
+
+for i in "$@"
+do
+case $i in
+  --num-nodes=*)
+  NUM_NODES="${i#*=}"
+  ;;
+  --image-name=*)
+  IMAGE_NAME="${i#*=}"
+  ;;
+  --dockerfile-path=*)
+  DOCKERFILE_PATH="${i#*=}"
+  ;;
+esac
+done
+
+./build_image --image-name=${IMAGE_NAME} --dockerfile-path=${DOCKERFILE_PATH}
+
+sed -e "s/<NUM_NODES>/${NUM_NODES}/g" \
+    -e "s/<IMAGE_NAME>/${IMAGE_NAME}/g" \
+    "${SRC_ROOT}/docker-compose-template.yml" | \
+    docker-compose -f - --project-name=${IMAGE_NAME} up --scale p2p=${NUM_NODES}

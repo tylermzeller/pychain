@@ -1,12 +1,12 @@
 version: '3'
 services:
   p2p:
-    image: pychain
+    image: <IMAGE_NAME>
     ports:
       - 7667
     environment:
-      - SERVICENAME=pychain_p2p
-      - NUMNODES=4
+      - SERVICENAME=<IMAGE_NAME>_p2p
+      - NUMNODES=<NUM_NODES>
       - PYTHONUNBUFFERED=1
     networks:
       - web

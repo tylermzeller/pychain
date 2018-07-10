@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+IMAGE_NAME="pychain"
+DOCKERFILE_PATH='.'
+
+for i in "$@"
+do
+case $i in
+  --image-name=*)
+  IMAGE_NAME="${i#*=}"
+  ;;
+  --dockerfile-path=*)
+  DOCKERFILE_PATH="${i#*=}"
+  ;;
+esac
+done
+
+docker build -t ${IMAGE_NAME} ${DOCKERFILE_PATH}
