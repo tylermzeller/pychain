@@ -106,6 +106,19 @@ class Blockchain:
                 if tx.id == id: return tx
         return None
 
+    # Similar to the above method, except this takes a list of txIds and
+    # does a single scan of the blockchain
+    def findTransactions(self, txIds):
+        num_txs = len(txIds)
+        txs = { txId: None for txId in txIds }
+        for block in self.iter_blocks():
+            for tx in block.transactions:
+                if tx.id in id_table:
+                    txs[tx.id] = tx
+                    num_txs -= 1
+                    if num_txs == 0: break
+        return txs
+
     def findUTXO(self):
         UTXO = {}
         spentTXOs = {}
@@ -136,11 +149,4 @@ class Blockchain:
     # Get's a hash table of transactions referenced by the inputs
     # hashed by the previous transactions' IDs
     def getPrevTransactions(self, tx):
-        prevTXs = {}
-
-        for vin in tx.vin:
-            prevTX = self.findTransaction(vin.txId)
-            if prevTX:
-                prevTXs[prevTX.id] = prevTX
-
-        return prevTXs
+        return self.findTransactions([vin.txId for vin in tx.vin])

@@ -11,6 +11,7 @@ from pickle import dumps
 from random import randint
 
 subsidy = 50
+default_fee = 0.1
 
 class Transaction:
     def __init__(self, vin=[], outDict=None, id=b'', empty=False):
@@ -123,14 +124,14 @@ def newTX(vin, outDict):
     return tx
 
 # Returns a Transaction instance
-def newCoinbaseTX(to):
+def newCoinbaseTX(to, fees=0):
     randbytes = b''
     for i in range(40):
         randbytes += bytes([randint(0, 255)])
 
     txin = TXInput(pubKey=randbytes.hex())
     outDict = OutputDict()
-    outDict.append(TXOutput(subsidy, address=to))
+    outDict.append(TXOutput(subsidy + fees, address=to))
 
     return Transaction([txin], outDict)
 
@@ -140,17 +141,18 @@ def newUTXOTransaction(frum, to, amount, utxoSet=None):
     wm = WalletManager()
     w = wm.getWallet(frum)
     pubKeyHash = hashPubKey(w.publicKey)
-    acc, validOutputs = utxoSet.findSpendableOutputs(pubKeyHash, amount)
+    amountWithFee = amount + default_fee
+    acc, validOutputs = utxoSet.findSpendableOutputs(pubKeyHash, amountWithFee)
 
-    if acc < amount:
+    if acc < amountWithFee:
         print('Not enough funds!')
         return None
 
     inputs = [TXInput(txId, outIdx, pubKey=w.publicKey) for txId in validOutputs for outIdx in validOutputs[txId]]
     outDict = OutputDict()
     outDict.append(TXOutput(amount, address=to))
-    if acc > amount:
-        outDict.append(TXOutput(acc - amount, address=frum))
+    if acc > amountWithFee:
+        outDict.append(TXOutput(acc - amountWithFee, address=frum))
 
     tx = Transaction(inputs, outDict)
     tx.sign(w.privateKey)
