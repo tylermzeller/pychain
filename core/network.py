@@ -1,10 +1,10 @@
 import node_discovery
 import p2p_interface as p2p
+import transaction
 from async_server import AsyncServer
 from block import encodeBlock, decodeBlock
 from blockchain import Blockchain
 from node_discovery import discoverNodes
-from transaction import encodeTX, decodeTX, newCoinbaseTX
 from util import encodeMsg, decodeMsg, waitKey, canWaitKey, toStr
 from utxo_set import UTXOSet
 
@@ -69,7 +69,7 @@ def sendGetData(address, typ, id):
 def sendTX(address, tx):
     print("Sending tx to %s" % address)
     command = b'tx'
-    x = p2p.tx(nodeAddress, encodeTX(tx))
+    x = p2p.tx(nodeAddress, transaction.encodeTX(tx))
     sendPayload(address, command, x)
 
 def sendVersion(address):
@@ -93,7 +93,8 @@ def mineTransactions():
         #print("All transactions were invalid! Waiting for more...")
         #return
 
-    cb = newCoinbaseTX(miningAddress)
+    fees = transaction.calcFees(txs)
+    cb = transaction.newCoinbaseTX(miningAddress, fees=fees)
     txs.append(cb)
     newBlock = Blockchain().mineBlock(txs)
     UTXOSet().reindex()
@@ -185,7 +186,7 @@ def handleGetData(msg):
 def handleTX(msg):
     print("Handling tx")
     txMsg = decodeMsg(msg)
-    tx = decodeTX(tx['tx'])
+    tx = transaction.decodeTX(tx['tx'])
 
     # old news
     if tx.id in mempool: return
@@ -247,7 +248,7 @@ def startServer(mineAddr):
 
     # mine the genesis block
     bc = Blockchain()
-    genesisBlock = bc.mineBlock([newCoinbaseTX(miningAddress)])
+    genesisBlock = bc.mineBlock([transaction.newCoinbaseTX(miningAddress)])
     UTXOSet().reindex()
     for node in knownNodes:
         if node != nodeAddress:

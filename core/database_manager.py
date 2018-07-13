@@ -4,7 +4,7 @@ import plyvel
 # WARNING: you should NEVER use the /tmp directory for persistence
 # in a production environment. You should expect the contents of
 # that dir to be erased by the OS periodically.
-base_db_path = os.getenv('DBDBPATH', default='/tmp/')
+base_db_path = os.getenv('DB_PATH', default='/tmp/')
 
 db_paths = {
     'blocks':   base_db_path + 'blocks/',

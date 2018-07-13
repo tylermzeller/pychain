@@ -159,6 +159,13 @@ def newUTXOTransaction(frum, to, amount, utxoSet=None):
 
     return tx
 
+def calcFees(txs):
+    s = 0
+    for tx in txs:
+      prevTxs = Blockchain().getPrevTransactions(tx)
+      s += sum([prevTxs[vin.txId].outDict[vin.outIdx].value for vin in tx.vin])
+    return s - sum([vout.value for tx in txs for vout in tx.outDict.values()])
+
 def encodeTX(tx):
     from transaction_input import encodeTXInput
     from transaction_output import encodeTXOutput
