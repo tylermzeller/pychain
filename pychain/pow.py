@@ -1,4 +1,4 @@
-from util import int64ToBinary, sha256
+import core.util
 
 targetBits = 20
 maxInt64 = 2**63 - 1
@@ -14,9 +14,9 @@ class ProofOfWork:
         data = b''.join([
             b.prevHash,
             b.merkleRoot,
-            int64ToBinary(b.timestamp),
-            int64ToBinary(targetBits),
-            int64ToBinary(nonce)
+            util.int64ToBinary(b.timestamp),
+            util.int64ToBinary(targetBits),
+            util.int64ToBinary(nonce)
         ])
         return data
 
@@ -25,7 +25,7 @@ class ProofOfWork:
         powHash = b''
         while nonce < maxInt64:
             data = self.prepareData(nonce)
-            hash = sha256(data)
+            hash = util.sha256(data)
             hashInt = int.from_bytes(hash, 'big')
             if hashInt < self.target:
                 powHash = hash
@@ -39,7 +39,7 @@ class ProofOfWork:
         # TODO: can calc merkle root here to verify there was
         # no bamboozle in transit
         data = self.prepareData(self.block.nonce)
-        hash = sha256(data)
+        hash = util.sha256(data)
         hashInt = int.from_bytes(hash, 'big')
 
         return hashInt < self.target

@@ -1,9 +1,15 @@
 from binascii import unhexlify
-from util import intToBytes
+import pychain.util as util
 
 alphabet = b'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 def encode(payload):
+    if not isinstance(payload, bytes):
+        raise ValueError('Payload must be of type bytes.')
+
+    if len(payload) == 0:
+        return b''
+
     n = int(payload.hex(), 16)
 
     res = b'' # bytes object result
@@ -11,7 +17,7 @@ def encode(payload):
         n, r = divmod(n, len(alphabet))
         # indexing a bytes object returns ints in python3
         # so we must convert it back into a bytes object
-        res += intToBytes(alphabet[r])
+        res += util.intToBytes(alphabet[r])
     res = res[::-1]
 
     pad = 0
@@ -22,7 +28,7 @@ def encode(payload):
         if b == 0: pad += 1
         else: break
 
-    res = intToBytes(alphabet[0]) * pad + res
+    res = util.intToBytes(alphabet[0]) * pad + res
     return res
 
 def decode(payload):

@@ -135,13 +135,13 @@ def newCoinbaseTX(to, fees=0):
 
     return Transaction([txin], outDict)
 
-def newUTXOTransaction(frum, to, amount, utxoSet=None):
+def newUTXOTransaction(frum, to, amount, utxoSet=None, fee=default_fee):
     if utxoSet is None:
         utxoSet = utxo_set.UTXOSet()
     wm = WalletManager()
     w = wm.getWallet(frum)
     pubKeyHash = hashPubKey(w.publicKey)
-    amountWithFee = amount + default_fee
+    amountWithFee = amount + fee
     acc, validOutputs = utxoSet.findSpendableOutputs(pubKeyHash, amountWithFee)
 
     if acc < amountWithFee:
