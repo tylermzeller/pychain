@@ -1,6 +1,5 @@
-from merkle_tree import MerkleTree
-from pow import ProofOfWork
-from util import sha256, toStr
+from pychain.merkle_tree import MerkleTree
+from pychain.pow import ProofOfWork
 
 from pickle import dumps
 from time import time

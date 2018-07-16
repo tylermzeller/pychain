@@ -1,7 +1,7 @@
-from database_manager import DBManager
+import pychain.util as util
+import pychain.wallet as wallet
 
-import util
-import wallet
+from pychain.database_manager import DBManager
 
 class WalletManager:
     def __init__(self):

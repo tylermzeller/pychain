@@ -1,4 +1,4 @@
-from wallet import hashPubKey
+from pychain.wallet import hashPubKey
 
 from ecdsa import VerifyingKey, SECP256k1
 

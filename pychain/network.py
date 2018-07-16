@@ -1,13 +1,15 @@
-import node_discovery
-import p2p_interface as p2p
-import transaction
-from async_server import AsyncServer
-from block import encodeBlock, decodeBlock
-from blockchain import Blockchain
-from node_discovery import discoverNodes
-from util import encodeMsg, decodeMsg, waitKey, canWaitKey, toStr
-from utxo_set import UTXOSet
+import pychain.base58 as base58
+import pychain.p2p_interface as p2p
+import pychain.transaction as transaction
 
+from pychain.async_server import AsyncServer
+from pychain.block import encodeBlock, decodeBlock
+from pychain.blockchain import Blockchain
+from pychain.node_discovery import discoverNodes
+from pychain.util import encodeMsg, decodeMsg, waitKey, canWaitKey, toStr
+from pychain.utxo_set import UTXOSet
+
+import random
 from socket import gethostname, gethostbyname
 from struct import pack
 
@@ -36,11 +38,6 @@ def sendAddr(address):
     command = b'addr'
     addresses = p2p.addr([*knownNodes, nodeAddress])
     sendPayload(address, command, addresses)
-
-def broadcastBlock(block):
-    print("Broadcasting block")
-    for address in knownNodes:
-        sendBlock(address, block)
 
 def sendBlock(address, block):
     print("Sending block %s to %s" % (block.hash.hex(), address))
@@ -83,32 +80,6 @@ def requestBlocks():
     for address in knownNodes:
         print(address)
         sendGetBlocks(address)
-
-def mineTransactions():
-    print("Attempting to mine new block")
-    txs = [tx for tx in mempool.values() if tx.verify()]
-
-    # NOTE: for testing, I'm letting the miners simply mine empty blocks
-    #if len(txs) == 0:
-        #print("All transactions were invalid! Waiting for more...")
-        #return
-
-    fees = transaction.calcFees(txs)
-    cb = transaction.newCoinbaseTX(miningAddress, fees=fees)
-    txs.append(cb)
-    newBlock = Blockchain().mineBlock(txs)
-    UTXOSet().reindex()
-
-    for tx in txs:
-        if tx.id in mempool:
-            del mempool[tx.id]
-
-    for node in knownNodes:
-        if node != nodeAddress:
-            sendInv(node, b'block', [newBlock.hash])
-
-    if len(mempool) > 0:
-        mineTransactions()
 
 def handleAddr(msg):
     print("Handling addr")
@@ -194,10 +165,8 @@ def handleTX(msg):
 
     # broadcast the new TX to all nodes.
     # This will not cause an infinite broadcast loop,
-    # because only new transactions get broadcast
-    for node in knownNodes:
-        if node != nodeAddress and node != txMsg['addrFrom']:
-            sendInv(node, b'tx', [tx.id])
+    # because only txs nodes haven't seen get broadcast
+    broadcast_tx(tx, exclude=[txMsg['addrFrom']])
 
     if len(mempool) >= 2 and len(miningAddress) > 0:
         mineTransactions()
@@ -227,6 +196,68 @@ msgHandlers = {
     b'version':      handleVersion
 }
 
+def mineTransactions():
+    global miningAddress
+    print("Attempting to mine new block")
+    txs = [tx for tx in mempool.values() if tx.verify()]
+
+    if len(txs) == 0:
+        print("All transactions were invalid! Waiting for more...")
+        return
+
+    fees = transaction.calcFees(txs)
+    cb = transaction.newCoinbaseTX(miningAddress, fees=fees)
+    txs.append(cb)
+    new_block = Blockchain().mineBlock(txs)
+    UTXOSet().reindex()
+
+    for tx in txs:
+        if tx.id in mempool:
+            del mempool[tx.id]
+
+    broadcast_block(new_block)
+
+    # if len(mempool) > 0:
+    #     mineTransactions()
+
+def broadcast_block(new_block, exclude=[]):
+    global nodeAddress
+    print("Broadcasting block %s" % new_block.hash.hex())
+    for node in knownNodes:
+        if node != nodeAddress and not node in exclude:
+            sendInv(node, b'block', [new_block.hash])
+
+def broadcast_tx(new_tx, exclude=[]):
+    global nodeAddress
+    print("Broadcasting tx %s" % new_tx.id.hex())
+    for node in knownNodes:
+        if node != nodeAddress and not node in exclude:
+            sendInv(node, b'tx', [new_tx.id])
+
+def create_random_tx():
+    wm = WalletManager()
+    addresses = wm.get_addresses()
+    while len(addresses) < 10:
+        w = wm.create_wallet()
+        addresses.append(w.getAddress())
+
+    random.shuffle(addresses)
+    frum = b''
+    us = UTXOSet()
+    for address in addresses:
+        pubKeyHash = base58.decode(address)[1:-4]
+        balance = sum([out.value for out in us.findUTXO(pubKeyHash)])
+        if balance > 0:
+            frum = address
+            break
+
+    if not frum:
+        return None
+
+    random.shuffle(addresses)
+    to = addresses[0]
+    if to == frum: to = addresses[1]
+
 def startServer(mineAddr):
     global miningAddress
     global knownNodes
@@ -246,19 +277,27 @@ def startServer(mineAddr):
     sr.setMsgHandlers(msgHandlers)
     sr.start()
 
-    # mine the genesis block
-    bc = Blockchain()
-    genesisBlock = bc.mineBlock([transaction.newCoinbaseTX(miningAddress)])
-    UTXOSet().reindex()
-    for node in knownNodes:
-        if node != nodeAddress:
-            sendInv(node, b'block', [genesisBlock.hash])
-
     #done = False
     #while not done:
     while 1:
-        mineTransactions()
-        if bc.getBestHeight() >= 5:
+        # generate empty blocks to seed the miner's wallets
+        if bc.getBestHeight() < 5:
+            new_block = Blockchain().mineBlock([transaction.newCoinbaseTX(miningAddress)])
+            UTXOSet().reindex()
+            broadcast_block(new_block)
+        # for blocks 5-10, generate random txs. These will get broadcast
+        # across the network (randomly) and eventually fill the mempoolself.
+        # A full mempool will trigger the mining of a new block.
+        elif bc.getBestHeight() < 10:
+            # Unpredictably produce transactions
+            if random.randint(0, 5e6) == 7:
+                rand_tx = create_random_tx()
+                mempool[rand_tx.id] = rand_tx
+                broadcast_tx(rand_tx)
+
+                if len(mempool) >= 2 and len(miningAddress) > 0:
+                    mineTransactions()
+        else:
             sr.stop()
             break
 

@@ -1,5 +1,5 @@
-from async_server import AsyncServer
-from util import encodeMsg, decodeMsg, intToBytes
+from pychain.async_server import AsyncServer
+from pychain.util import encodeMsg, decodeMsg, intToBytes
 
 import socket
 from struct import pack, unpack

@@ -1,11 +1,12 @@
-import base58
-import utxo_set
-from blockchain import Blockchain
-from wallet import hashPubKey
-from wallet_manager import WalletManager
-from transaction_input import TXInput
-from transaction_output import TXOutput, OutputDict
-from util import sha256
+import pychain.base58 as base58
+
+from pychain.utxo_set import UTXOSet
+from pychain.blockchain import Blockchain
+from pychain.wallet import hashPubKey
+from pychain.wallet_manager import WalletManager
+from pychain.transaction_input import TXInput
+from pychain.transaction_output import TXOutput, OutputDict
+from pychain.util import sha256
 
 from pickle import dumps
 from random import randint

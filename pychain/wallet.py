@@ -1,5 +1,6 @@
-import base58
-from util import sha256, ripemd160, intToBytes
+import pychain.base58 as base58
+
+from pychain.util import sha256, ripemd160, intToBytes
 
 import shelve
 from ecdsa import SigningKey, VerifyingKey, SECP256k1

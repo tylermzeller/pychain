@@ -1,4 +1,4 @@
-from util import sha256
+from pychain.util import sha256
 
 class MerkleNode:
     def __init__(self, left=None, right=None, data=None):

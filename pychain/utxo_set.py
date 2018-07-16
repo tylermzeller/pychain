@@ -1,8 +1,8 @@
-import transaction_output as txout
-import util
+import pychain.transaction_output as txout
+import pychain.util as util
 
-from blockchain import Blockchain
-from database_manager import DBManager
+from pychain.blockchain import Blockchain
+from pychain.database_manager import DBManager
 
 from binascii import unhexlify
 

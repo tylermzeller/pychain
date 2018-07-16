@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import cli
-from database_manager import DBManager
+import pychain.cli as cli
+from pychain.database_manager import DBManager
 
 def main():
     try:

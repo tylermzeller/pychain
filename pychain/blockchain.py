@@ -1,7 +1,7 @@
-import block
-import transaction
-import util
-from database_manager import DBManager
+import pychain.block as block
+import pychain.transaction as transaction
+import pychain.util as util
+from pychain.database_manager import DBManager
 
 
 class BlockchainIterator:
