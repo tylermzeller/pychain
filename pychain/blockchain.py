@@ -1,8 +1,6 @@
 import pychain.block as block
-import pychain.transaction as transaction
 import pychain.util as util
 from pychain.database_manager import DBManager
-
 
 class BlockchainIterator:
     def __init__(self, currentHash=b''):
@@ -78,17 +76,13 @@ class Blockchain:
 
         if not lastBlock:
             print("\nEmpty blockchain. Creating genesis.")
-            if len(transactions) > 1:
-                raise ValueError("Error: should only be a single tx in the genesis block.")
-            elif len(transactions) == 0:
-                coinbase = transaction.newCoinbaseTX(address)
-            elif len(transactions) == 1:
-                coinbase = transactions[0]
-            newBlock = block.newGenesisBlock(coinbase)
+            if len(transactions) != 1:
+                raise ValueError("Error: should be a single tx in the genesis block. Instead found %d" % len(transactions))
+            newBlock = block.newGenesisBlock(transactions[0])
         else:
             newBlock = block.Block(transactions, lastBlock.hash, lastBlock.height + 1)
 
-        print("Mined a new block %s" % newBlock.hash.hex())
+        print("Mined block %s" % newBlock.hash.hex())
         self.addBlock(newBlock)
         return newBlock
 
@@ -113,7 +107,7 @@ class Blockchain:
         txs = { txId: None for txId in txIds }
         for block in self.iter_blocks():
             for tx in block.transactions:
-                if tx.id in id_table:
+                if tx.id in txs:
                     txs[tx.id] = tx
                     num_txs -= 1
                     if num_txs == 0: break

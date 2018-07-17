@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 IMAGE_NAME="pychain"
-DOCKERFILE_PATH='.'
+DOCKERFILE_PATH='..'
 
 for i in "$@"
 do

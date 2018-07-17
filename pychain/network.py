@@ -8,6 +8,7 @@ from pychain.blockchain import Blockchain
 from pychain.node_discovery import discoverNodes
 from pychain.util import encodeMsg, decodeMsg, waitKey, canWaitKey, toStr
 from pychain.utxo_set import UTXOSet
+from pychain.wallet_manager import WalletManager
 
 import random
 from socket import gethostname, gethostbyname
@@ -34,7 +35,7 @@ def sendPayload(address, command, payload):
 
 
 def sendAddr(address):
-    print("Sending addr to %s" % address)
+    # print("Sending addr to %s" % address)
     command = b'addr'
     addresses = p2p.addr([*knownNodes, nodeAddress])
     sendPayload(address, command, addresses)
@@ -46,19 +47,19 @@ def sendBlock(address, block):
     sendPayload(address, command, blck)
 
 def sendInv(address, typ, items):
-    print("Sending inv to %s" % address)
+    # print("Sending inv to %s" % address)
     command = b'inv'
     inv = p2p.inv(nodeAddress, typ, items)
     sendPayload(address, command, inv)
 
 def sendGetBlocks(address):
-    print("Sending getblocks to %s" % address)
+    # print("Sending getblocks to %s" % address)
     command = b'getblocks'
     getblocks = p2p.getblocks(nodeAddress)
     sendPayload(address, command, getblocks)
 
 def sendGetData(address, typ, id):
-    print("Sending getdata of type %s to %s" % (toStr(typ), address))
+    # print("Sending getdata of type %s to %s" % (toStr(typ), address))
     command = b'getdata'
     getdata = p2p.getdata(nodeAddress, typ, id)
     sendPayload(address, command, getdata)
@@ -70,19 +71,19 @@ def sendTX(address, tx):
     sendPayload(address, command, x)
 
 def sendVersion(address):
-    print("Sending version")
+    # print("Sending version")
     command = b'version'
     version = p2p.version(nodeAddress, nodeVersion, Blockchain().getBestHeight())
     sendPayload(address, command, version)
 
 def requestBlocks():
-    print("Broadcasting a request for blocks")
+    # print("Broadcasting a request for blocks")
     for address in knownNodes:
         print(address)
         sendGetBlocks(address)
 
 def handleAddr(msg):
-    print("Handling addr")
+    # print("Handling addr")
     addresses = decodeMsg(msg)
     knownNodes.extend(addresses['addrList'])
     print("There are now %d peers" % len(knownNodes))
@@ -90,7 +91,7 @@ def handleAddr(msg):
 
 def handleBlock(msg):
     blc = decodeMsg(msg)
-    print("Handling block from %s" % blc['addrFrom'])
+    # print("Handling block from %s" % blc['addrFrom'])
     block = decodeBlock(blc['block'])
     addrFrom = blc['addrFrom']
 
@@ -116,7 +117,7 @@ def handleBlock(msg):
 
 def handleInv(msg):
     inv = decodeMsg(msg)
-    print("Handling inv with %d %ss from %s" % (len(inv['items']), toStr(inv['type']), inv['addrFrom']))
+    # print("Handling inv with %d %ss from %s" % (len(inv['items']), toStr(inv['type']), inv['addrFrom']))
 
     if len(inv['items']) == 0: return
 
@@ -135,12 +136,12 @@ def handleInv(msg):
 
 def handleGetBlocks(msg):
     getblocks = decodeMsg(msg)
-    print("Handling getblocks from %s" % getblocks['addrFrom'])
+    # print("Handling getblocks from %s" % getblocks['addrFrom'])
     sendInv(getblocks['addrFrom'], b'block', Blockchain().getBlockHashes())
 
 def handleGetData(msg):
     getdata = decodeMsg(msg)
-    print("Handling getdata from %s" % getdata['addrFrom'])
+    # print("Handling getdata from %s" % getdata['addrFrom'])
 
     if getdata['type'] == b'block':
         block = Blockchain().getBlock(getdata['id'])
@@ -155,13 +156,14 @@ def handleGetData(msg):
         sendTX(getdata['addrFrom'], mempool[txID])
 
 def handleTX(msg):
-    print("Handling tx")
+    # print("Handling tx")
     txMsg = decodeMsg(msg)
     tx = transaction.decodeTX(tx['tx'])
 
     # old news
     if tx.id in mempool: return
     mempool[tx.id] = tx
+    print("Added tx %s" % tx.id.hex())
 
     # broadcast the new TX to all nodes.
     # This will not cause an infinite broadcast loop,
@@ -172,7 +174,7 @@ def handleTX(msg):
         mineTransactions()
 
 def handleVersion(msg):
-    print("Handling version")
+    # print("Handling version")
     version = decodeMsg(msg)
     print(version)
     localBestHeight = Blockchain().getBestHeight()
@@ -222,14 +224,14 @@ def mineTransactions():
 
 def broadcast_block(new_block, exclude=[]):
     global nodeAddress
-    print("Broadcasting block %s" % new_block.hash.hex())
+    #print("Broadcasting block %s" % new_block.hash.hex())
     for node in knownNodes:
         if node != nodeAddress and not node in exclude:
             sendInv(node, b'block', [new_block.hash])
 
 def broadcast_tx(new_tx, exclude=[]):
     global nodeAddress
-    print("Broadcasting tx %s" % new_tx.id.hex())
+    #print("Broadcasting tx %s" % new_tx.id.hex())
     for node in knownNodes:
         if node != nodeAddress and not node in exclude:
             sendInv(node, b'tx', [new_tx.id])
@@ -240,6 +242,7 @@ def create_random_tx():
     while len(addresses) < 10:
         w = wm.create_wallet()
         addresses.append(w.getAddress())
+        print("Creating a new wallet %s" % toStr(w.getAddress()))
 
     random.shuffle(addresses)
     frum = b''
@@ -247,16 +250,20 @@ def create_random_tx():
     for address in addresses:
         pubKeyHash = base58.decode(address)[1:-4]
         balance = sum([out.value for out in us.findUTXO(pubKeyHash)])
+        print("Balance for %s: %d" % (toStr(address), balance))
         if balance > 0:
             frum = address
             break
 
     if not frum:
+        print("Found no wallets with a balance > 0")
         return None
 
     random.shuffle(addresses)
     to = addresses[0]
     if to == frum: to = addresses[1]
+    print("Making a random tx from %s to %s" % (toStr(frum), toStr(to)))
+    return tx
 
 def startServer(mineAddr):
     global miningAddress
@@ -276,13 +283,14 @@ def startServer(mineAddr):
     sr = p2p.SocketReader(nodeAddress)
     sr.setMsgHandlers(msgHandlers)
     sr.start()
+    bc = Blockchain()
 
     #done = False
     #while not done:
     while 1:
         # generate empty blocks to seed the miner's wallets
         if bc.getBestHeight() < 5:
-            new_block = Blockchain().mineBlock([transaction.newCoinbaseTX(miningAddress)])
+            new_block = bc.mineBlock([transaction.newCoinbaseTX(miningAddress)])
             UTXOSet().reindex()
             broadcast_block(new_block)
         # for blocks 5-10, generate random txs. These will get broadcast
@@ -290,7 +298,8 @@ def startServer(mineAddr):
         # A full mempool will trigger the mining of a new block.
         elif bc.getBestHeight() < 10:
             # Unpredictably produce transactions
-            if random.randint(0, 5e6) == 7:
+            x = random.randint(0, 5e6)
+            if x < 1000:
                 rand_tx = create_random_tx()
                 mempool[rand_tx.id] = rand_tx
                 broadcast_tx(rand_tx)

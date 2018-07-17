@@ -1,4 +1,4 @@
-import pychain.util
+import pychain.util as util
 
 targetBits = 20
 maxInt64 = 2**63 - 1

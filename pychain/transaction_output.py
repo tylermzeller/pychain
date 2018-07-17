@@ -1,4 +1,4 @@
-import pychain.base58
+import pychain.base58 as base58
 
 class TXOutput:
     def __init__(self, value=0, idx=-1, address=None, pubKeyHash=None, empty=False):

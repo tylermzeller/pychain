@@ -28,7 +28,7 @@ def listAddresses():
         return
 
     for address in addresses:
-        print(address)
+        print(util.toStr(address))
 
 def printChain():
     for i, block in enumerate(Blockchain().iter_blocks()):
@@ -37,6 +37,8 @@ def printChain():
             print("Error! This block could not be validated")
         #print(json.dumps(block.toDict(), indent=2))
         print(block.hash.hex())
+        for tx in block.transactions:
+            print(json.dumps(tx.toDict(), indent=2))
 
 def newBlockchain(address):
     if not wallet.validateAddress(address.encode()):
