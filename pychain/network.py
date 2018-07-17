@@ -65,7 +65,7 @@ def sendGetData(address, typ, id):
     sendPayload(address, command, getdata)
 
 def sendTX(address, tx):
-    print("Sending tx to %s" % address)
+    print("Sending tx %s to %s" % (tx.id.hex(), address))
     command = b'tx'
     x = p2p.tx(nodeAddress, transaction.encodeTX(tx))
     sendPayload(address, command, x)
@@ -158,7 +158,7 @@ def handleGetData(msg):
 def handleTX(msg):
     # print("Handling tx")
     txMsg = decodeMsg(msg)
-    tx = transaction.decodeTX(tx['tx'])
+    tx = transaction.decodeTX(txMsg['tx'])
 
     # old news
     if tx.id in mempool: return
@@ -170,8 +170,9 @@ def handleTX(msg):
     # because only txs nodes haven't seen get broadcast
     broadcast_tx(tx, exclude=[txMsg['addrFrom']])
 
-    if len(mempool) >= 2 and len(miningAddress) > 0:
-        mineTransactions()
+    # NOTE: We DON'T want to mine blocks in the server's thread!
+    # if len(mempool) >= 2 and len(miningAddress) > 0:
+    #     mine_transactions()
 
 def handleVersion(msg):
     # print("Handling version")
@@ -198,7 +199,7 @@ msgHandlers = {
     b'version':      handleVersion
 }
 
-def mineTransactions():
+def mine_transactions():
     global miningAddress
     print("Attempting to mine new block")
     txs = [tx for tx in mempool.values() if tx.verify()]
@@ -208,6 +209,7 @@ def mineTransactions():
         return
 
     fees = transaction.calcFees(txs)
+    print("fees = %2.3f" % fees)
     cb = transaction.newCoinbaseTX(miningAddress, fees=fees)
     txs.append(cb)
     new_block = Blockchain().mineBlock(txs)
@@ -215,12 +217,13 @@ def mineTransactions():
 
     for tx in txs:
         if tx.id in mempool:
+            print("deleting tx %s from mempool" % tx.id.hex())
             del mempool[tx.id]
 
     broadcast_block(new_block)
 
     # if len(mempool) > 0:
-    #     mineTransactions()
+    #     mine_transactions()
 
 def broadcast_block(new_block, exclude=[]):
     global nodeAddress
@@ -237,6 +240,7 @@ def broadcast_tx(new_tx, exclude=[]):
             sendInv(node, b'tx', [new_tx.id])
 
 def create_random_tx():
+    print("creating random tx")
     wm = WalletManager()
     addresses = wm.get_addresses()
     while len(addresses) < 10:
@@ -250,7 +254,6 @@ def create_random_tx():
     for address in addresses:
         pubKeyHash = base58.decode(address)[1:-4]
         balance = sum([out.value for out in us.findUTXO(pubKeyHash)])
-        print("Balance for %s: %d" % (toStr(address), balance))
         if balance > 0:
             frum = address
             break
@@ -262,10 +265,12 @@ def create_random_tx():
     random.shuffle(addresses)
     to = addresses[0]
     if to == frum: to = addresses[1]
-    print("Making a random tx from %s to %s" % (toStr(frum), toStr(to)))
+    print("Making a random tx of %2.3f from %s to %s" % (balance / 2, toStr(frum), toStr(to)))
+    tx = transaction.newUTXOTransaction(frum, to, balance / 2)
     return tx
 
 def startServer(mineAddr):
+    import time
     global miningAddress
     global knownNodes
     print("My host: %s" % nodeAddress)
@@ -288,24 +293,30 @@ def startServer(mineAddr):
     #done = False
     #while not done:
     while 1:
+        start = time.time()
+        bestHeight = bc.getBestHeight()
+        print("Height time = %f" % (time.time() - start))
         # generate empty blocks to seed the miner's wallets
-        if bc.getBestHeight() < 5:
+        if bestHeight < 5:
             new_block = bc.mineBlock([transaction.newCoinbaseTX(miningAddress)])
             UTXOSet().reindex()
             broadcast_block(new_block)
         # for blocks 5-10, generate random txs. These will get broadcast
         # across the network (randomly) and eventually fill the mempoolself.
         # A full mempool will trigger the mining of a new block.
-        elif bc.getBestHeight() < 10:
+        elif bestHeight < 10:
             # Unpredictably produce transactions
             x = random.randint(0, 5e6)
             if x < 1000:
                 rand_tx = create_random_tx()
-                mempool[rand_tx.id] = rand_tx
-                broadcast_tx(rand_tx)
+                if rand_tx:
+                    mempool[rand_tx.id] = rand_tx
+                    broadcast_tx(rand_tx)
 
-                if len(mempool) >= 2 and len(miningAddress) > 0:
-                    mineTransactions()
+            # NOTE: We DO want to mine blocks in the miner's thread
+            if len(mempool) >= 2 and len(miningAddress) > 0:
+                print("mempool full, mining txs")
+                mine_transactions()
         else:
             sr.stop()
             break

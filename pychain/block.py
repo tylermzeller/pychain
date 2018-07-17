@@ -1,3 +1,5 @@
+import pychain.transaction as transaction
+
 from pychain.merkle_tree import MerkleTree
 from pychain.pow import ProofOfWork
 
@@ -38,9 +40,8 @@ def newGenesisBlock(coinbase):
     return Block([coinbase], b'\x00' * 32, 0)
 
 def encodeBlock(block):
-    from pychain.transaction import encodeTX
     if isinstance(block, Block):
-        encodedTXs = [encodeTX(tx) for tx in block.transactions]
+        encodedTXs = [transaction.encodeTX(tx) for tx in block.transactions]
         return {
                 b'__block__':    True,
                 b'transactions': encodedTXs,
@@ -53,7 +54,6 @@ def encodeBlock(block):
         }
 
 def decodeBlock(obj):
-    from pychain.transaction import decodeTX
     if b'__block__' in obj:
         block = Block(empty=True)
         block.timestamp =   obj[b'timestamp']
@@ -62,5 +62,5 @@ def decodeBlock(obj):
         block.hash =        obj[b'hash']
         block.merkleRoot =  obj[b'merkleRoot']
         block.nonce =       obj[b'nonce']
-        block.transactions = [decodeTX(txObj) for txObj in obj[b'transactions']]
+        block.transactions = [transaction.decodeTX(txObj) for txObj in obj[b'transactions']]
         return block

@@ -1,11 +1,11 @@
 import pychain.base58 as base58
+import pychain.blockchain as blockchain
 
 from pychain.utxo_set import UTXOSet
-from pychain.blockchain import Blockchain
 from pychain.wallet import hashPubKey
 from pychain.wallet_manager import WalletManager
-from pychain.transaction_input import TXInput
-from pychain.transaction_output import TXOutput, OutputDict
+from pychain.transaction_input import TXInput, encodeTXInput, encodeTXInput
+from pychain.transaction_output import TXOutput, OutputDict, encodeTXOutput, decodeTXOutput
 from pychain.util import sha256
 
 from pickle import dumps
@@ -57,7 +57,7 @@ class Transaction:
         if self.isCoinbase(): return
 
         if prevTxs is None:
-            prevTxs = Blockchain().getPrevTransactions(self)
+            prevTxs = blockchain.Blockchain().getPrevTransactions(self)
 
         # A trimmed copy is a copy of the TX, but the
         # inputs have no signatures or pubkeys
@@ -77,7 +77,7 @@ class Transaction:
         if self.isCoinbase(): return True
 
         if prevTxs is None:
-            prevTxs = Blockchain().getPrevTransactions(self)
+            prevTxs = blockchain.Blockchain().getPrevTransactions(self)
 
         for txInput in self.vin:
             if txInput.txId not in prevTxs:
@@ -138,9 +138,9 @@ def newCoinbaseTX(to, fees=0):
 
 def newUTXOTransaction(frum, to, amount, utxoSet=None, fee=default_fee):
     if utxoSet is None:
-        utxoSet = utxo_set.UTXOSet()
+        utxoSet = UTXOSet()
     wm = WalletManager()
-    w = wm.getWallet(frum)
+    w = wm.get_wallet(frum)
     pubKeyHash = hashPubKey(w.publicKey)
     amountWithFee = amount + fee
     acc, validOutputs = utxoSet.findSpendableOutputs(pubKeyHash, amountWithFee)
@@ -163,13 +163,11 @@ def newUTXOTransaction(frum, to, amount, utxoSet=None, fee=default_fee):
 def calcFees(txs):
     s = 0
     for tx in txs:
-      prevTxs = Blockchain().getPrevTransactions(tx)
+      prevTxs = blockchain.Blockchain().getPrevTransactions(tx)
       s += sum([prevTxs[vin.txId].outDict[vin.outIdx].value for vin in tx.vin])
     return s - sum([vout.value for tx in txs for vout in tx.outDict.values()])
 
 def encodeTX(tx):
-    from pychain.transaction_input import encodeTXInput
-    from pychain.transaction_output import encodeTXOutput
     if isinstance(tx, Transaction):
         inputs = [encodeTXInput(v) for v in tx.vin]
         outputs = { k: encodeTXOutput(v) for k, v in tx.outDict.items() }
@@ -181,8 +179,6 @@ def encodeTX(tx):
         }
 
 def decodeTX(obj):
-    from pychain.transaction_input import decodeTXInput
-    from pychain.transaction_output import decodeTXOutput
     if b'__tx__' in obj:
         tx = Transaction(empty=True)
         tx.vin = [decodeTXInput(v) for v in obj[b'vin']]

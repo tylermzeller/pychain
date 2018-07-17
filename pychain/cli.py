@@ -84,7 +84,8 @@ def startServer(minerAddress):
     if minerAddress is None:
         minerAddress = createWallet()
     if len(minerAddress) > 0 and wallet.validateAddress(minerAddress.encode()):
-        print("This node is mining and will receive rewards to %s" % minerAddress)
+        #print("This node is mining and will receive rewards to %s" % minerAddress)
+        pass
     else:
         print("No or incorrect mining address. This node is not mining and will not receive rewards.")
 
