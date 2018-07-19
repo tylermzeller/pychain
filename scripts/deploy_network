@@ -25,4 +25,4 @@ done
 sed -e "s/<NUM_NODES>/${NUM_NODES}/g" \
     -e "s/<IMAGE_NAME>/${IMAGE_NAME}/g" \
     "${SRC_ROOT}/docker-compose-template.yml" | \
-    docker-compose -f - --project-name=${IMAGE_NAME} up --scale p2p=${NUM_NODES}
+    docker-compose -f - --project-name=${IMAGE_NAME} up --force-recreate --scale p2p=${NUM_NODES}
