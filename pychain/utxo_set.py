@@ -1,7 +1,7 @@
 import pychain.transaction_output as txout
 import pychain.util as util
 
-from pychain.blockchain import Blockchain
+import pychain.block_explorer as bx
 from pychain.database_manager import DBManager
 
 from binascii import unhexlify
@@ -14,7 +14,7 @@ class UTXOSet:
         # empty the current indexed UTXOs
         self.utxos_db.clear()
         # get the new UTXOs
-        UTXO = Blockchain().findUTXO()
+        UTXO = bx.BlockExplorer().findUTXO()
         with self.utxos_db.write_batch() as wb:
             for txId, txOutputs in UTXO.items():
                 # add them to the cache
@@ -42,7 +42,7 @@ class UTXOSet:
                 wb.put(tx.id, encodedNewOutputs)
 
     def findSpendableOutputs(self, pubKeyHash, amount):
-        unspentOutIndices = {}
+        outputDict = {}
         accumulated = 0
 
         for txId, encodedOutputs in self.utxos_db.iter_items():
@@ -50,11 +50,10 @@ class UTXOSet:
             for txOutput in unspentOutputs:
                 if txOutput.isLockedWithKey(pubKeyHash) and accumulated < amount:
                     accumulated += txOutput.value
-                    if txId not in unspentOutIndices:
-                        unspentOutIndices[txId] = []
-                    unspentOutIndices[txId].append(txOutput.idx)
-
-        return accumulated, unspentOutIndices
+                    if txId not in outputDict:
+                        outputDict[txId] = {}
+                    outputDict[txId][txOutput.idx] = txOutput
+        return accumulated, outputDict
 
     def findUTXO(self, pubKeyHash):
         UTXO = []

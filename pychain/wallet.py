@@ -6,6 +6,7 @@ import shelve
 from ecdsa import SigningKey, VerifyingKey, SECP256k1
 
 addressChecksumLength = 4
+default_fee = 0.1
 VERSION = b'\x00'
 
 def newKeyPair():
@@ -40,6 +41,49 @@ class Wallet:
         versionedPayload = VERSION + pubKeyHash
         fullPayload = versionedPayload + checksum(versionedPayload)
         return base58.encode(fullPayload)
+
+    def create_tx(self, to, amount, utxoSet, fee=default_fee):
+        pubKeyHash = hashPubKey(self.publicKey)
+        amountWithFee = amount + fee
+        acc, validOutputs = utxoSet.findSpendableOutputs(pubKeyHash, amountWithFee)
+
+        if acc < amountWithFee:
+            print('Not enough funds!')
+            return None
+
+        inputs = [TXInput(txId, outIdx, pubKey=w.publicKey) for txId in validOutputs for outIdx in validOutputs[txId]]
+        outDict = OutputDict()
+        outDict.append(TXOutput(amount, address=to))
+        if acc > amountWithFee:
+            outDict.append(TXOutput(acc - amountWithFee, address=frum))
+
+        tx = Transaction(inputs, outDict)
+        # NOTE: for testing only
+        for tx_in in tx.vin:
+            if not tx_in.txId in validOutputs:
+                print(tx.toDict())
+                raise ValueError("Transaction has inputs whose previous outputs could not be found.")
+
+        self.sign(tx, validOutputs)
+
+        return tx
+
+    def sign(self, tx, prevTxs):
+        # Coinbase transactions have no inputs to sign
+        if tx.isCoinbase(): return
+
+        # A trimmed copy is a copy of the TX, but the
+        # inputs have no signatures or pubkeys
+        trimCopy = tx.trimmedCopy()
+
+        for i, txInput in enumerate(self.vin):
+            inCopy = trimCopy.vin[i]
+            refTxOutput = prevTxs[txInput.txId][txInput.outIdx]
+            inCopy.signature = None
+            inCopy.pubKey = refTxOutput.pubKeyHash
+            trimCopy.setId()
+            inCopy.pubKey = None
+            txInput.signature = self.privKey.sign(trimCopy.id)
 
 def encodeWallet(w):
     if isinstance(w, Wallet):
