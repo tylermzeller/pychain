@@ -4,17 +4,49 @@ import pychain.block_explorer as block_explorer
 import pychain.transaction as transaction
 import pychain.transaction_input as transaction_input
 import pychain.transaction_output as transaction_output
+import pychain.utxo_set as utxo_set
+
+from random import randint
+from threading import Lock
+
+subsidy = 50
 
 class Miner:
     def __init__(self, address):
         self.address = address
         self.mempool = {}
+        self.mempool_mutex = Lock()
         self.bx = block_explorer.BlockExplorer()
         self.bc = blockchain.Blockchain()
 
+    def add_txs(self, txs):
+        with self.mempool_mutex:
+            for tx in txs:
+                if tx.id in self.mempool:
+                    continue
+
+                if not self.verify(tx):
+                    print("Could not verify tx %s" % tx.id.hex())
+                    print(tx.toDict())
+                    continue
+
+                self.mempool[tx.id] = tx
+                print("Added tx %s" % tx.id.hex())
+
+    def get_txs(self):
+        with self.mempool_mutex:
+            return [tx for tx in self.mempool.values()]
+
+    def delete_txs(self, txs):
+        with self.mempool_mutex:
+            for tx in txs:
+                if tx.id in self.mempool:
+                    print("deleting tx %s from mempool" % tx.id.hex())
+                    del self.mempool[tx.id]
+
     # Returns a Transaction instance
-    def newCoinbaseTX(self, fees=0):
-        if len(self.address) = 0:
+    def new_coinbase_tx(self, fees=0):
+        if len(self.address) == 0:
             raise RuntimeError("Error: Miners without addresses cannot create coinbases.")
 
         randbytes = b''
@@ -25,7 +57,7 @@ class Miner:
         # be it a poem or any arbitrary string. I just need to prepend
         # some random bytes to it, or else the tx hash won't be unique
         txin = transaction_input.TXInput(pubKey=randbytes.hex())
-        outDict = OutputDict()
+        outDict = transaction_output.OutputDict()
         outDict.append(transaction_output.TXOutput(subsidy + fees, address=self.address))
 
         return transaction.Transaction([txin], outDict)
@@ -37,10 +69,13 @@ class Miner:
 
         for txInput in tx.vin:
             if txInput.txId not in prevTxs:
-                raise Exception("Prev TX for TXInput %s not found" % txInput.txId.hex())
-            if not prevTxs[txInput.txId].id:
-                print(prevTxs[txInput.txId])
-                raise Exception("Invalid previous tx.")
+                return False
+                #raise Exception("Prev TX for TXInput %s not found" % txInput.txId.hex())
+            if not prevTxs[txInput.txId]:
+                print("Could not find tx %s" % txInput.txId.hex())
+                return False
+                # print(self.bx.findTransaction(txInput.txId).toDict())
+                # raise Exception("Invalid previous tx.")
         # A trimmed copy is a copy of the TX, but the
         # inputs have no signatures or pubkeys
         trimCopy = tx.trimmedCopy()
@@ -75,19 +110,20 @@ class Miner:
         # Didn't find any invalid txs
         return True
 
-    def calcFees(txs):
-        s = 0
+    def calc_fees(self, txs):
+        inputs = 0
         for tx in txs:
-          prevTxs = self.bx.getPrevTransactions(tx)
-          s += sum([prevTxs[vin.txId].outDict[vin.outIdx].value for vin in tx.vin])
-        return s - sum([vout.value for tx in txs for vout in tx.outDict.values()])
+            prevTxs = self.bx.getPrevTransactions(tx)
+            inputs += sum([prevTxs[vin.txId].outDict[vin.outIdx].value for vin in tx.vin])
+        outputs = sum([vout.value for tx in txs for vout in tx.outDict.values()])
+        return inputs - outputs
 
     def mine_block(self, transactions=[]):
-        if len(self.address) = 0:
+        if len(self.address) == 0:
             raise RuntimeError("Error: Miners without addresses cannot mine blocks.")
 
         if len(transactions) == 0:
-            transactions.append(self.newCoinbaseTX())
+            transactions = [self.new_coinbase_tx()]
 
         found_coinbase = False
         for tx in transactions:
@@ -113,37 +149,30 @@ class Miner:
 
         print("Mined block %s" % new_block.hash.hex())
 
-        # NOTE: We don't reindex UTXO after every added block...
-        # We reindex after every successful mined block.
-        # When receiving another node's inventory, we may add many blocks and
-        # then perform a batch reindex
         self.bc.addBlock(new_block)
         utxo_set.UTXOSet().reindex()
         return new_block
 
     def mine_transactions(self):
-        if len(self.address) = 0:
+        if len(self.address) == 0:
             raise RuntimeError("Error: Miners without addresses cannot mine blocks.")
 
         print("Attempting to mine new block")
-        txs = [tx for tx in self.mempool.values() if self.verify(tx)]
+        txs = self.get_txs()
 
         if len(txs) == 0:
             print("All transactions were invalid! Waiting for more...")
             return
 
-        fees = self.calcFees(txs)
+        fees = self.calc_fees(txs)
         print("fees = %2.3f" % fees)
-        cb = self.newCoinbaseTX(fees=fees)
+        cb = self.new_coinbase_tx(fees=fees)
         txs.append(cb)
         new_block = self.mine_block(txs)
 
-        for tx in txs:
-            if tx.id in self.mempool:
-                print("deleting tx %s from mempool" % tx.id.hex())
-                del self.mempool[tx.id]
+        self.delete_txs(txs)
 
         # if len(mempool) > 0:
         #     mine_transactions()
 
-        return block
+        return new_block

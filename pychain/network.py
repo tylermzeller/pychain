@@ -14,6 +14,7 @@ from pychain.utxo_set import UTXOSet
 from pychain.wallet_manager import WalletManager
 
 import random
+import time
 from socket import gethostname, gethostbyname
 from struct import pack
 
@@ -161,19 +162,15 @@ def handleTX(msg):
     # print("Handling tx")
     txMsg = decodeMsg(msg)
     tx = transaction.decodeTX(txMsg['tx'])
-
-    # old news
-    if tx.id in miner.mempool: return
-    miner.mempool[tx.id] = tx
-    print("Added tx %s" % tx.id.hex())
+    miner.add_txs([tx])
 
     # broadcast the new TX to all nodes.
-    # This will not cause an infinite broadcast loop,
+    # NOTE: This will not cause an infinite broadcast loop,
     # because only txs nodes haven't seen get broadcast
     broadcast_tx(tx, exclude=[txMsg['addrFrom']])
 
     # NOTE: We DON'T want to mine blocks in the server's thread
-    # NOTE: leaving this here to show what NOT to do
+    # [Keep for reference]
     # if len(mempool) >= 2 and len(miningAddress) > 0:
     #     mine_transactions()
 
@@ -204,33 +201,29 @@ msgHandlers = {
 
 def broadcast_block(new_block, exclude=[]):
     global nodeAddress
-    #print("Broadcasting block %s" % new_block.hash.hex())
     for node in knownNodes:
         if node != nodeAddress and not node in exclude:
             sendInv(node, b'block', [new_block.hash])
 
 def broadcast_tx(new_tx, exclude=[]):
     global nodeAddress
-    #print("Broadcasting tx %s" % new_tx.id.hex())
     for node in knownNodes:
         if node != nodeAddress and not node in exclude:
             sendInv(node, b'tx', [new_tx.id])
 
 def create_random_tx():
-    print("creating random tx")
     wm = WalletManager()
     addresses = wm.get_addresses()
     while len(addresses) < 10:
         w = wm.create_wallet()
-        addresses.append(w.getAddress())
-        print("Creating a new wallet %s" % toStr(w.getAddress()))
+        addresses.append(w.get_address())
+        print("Creating a new wallet %s" % toStr(w.get_address()))
 
     random.shuffle(addresses)
     frum = b''
     us = UTXOSet()
-    bx = BlockExplorer()
     for address in addresses:
-        balance = bx.get_balance(address=address)
+        balance = us.get_balance(address=address)
         if balance > 0:
             frum = address
             break
@@ -249,12 +242,11 @@ def create_random_tx():
     return tx
 
 def startServer(mineAddr):
-    import time
     global knownNodes, miner
     print("My host: %s" % nodeAddress)
     miner = Miner(mineAddr)
 
-    print("My mining address %s" % toStr(miningAddress))
+    print("My mining address %s" % toStr(miner.address))
 
     nodes = discoverNodes()
     for name in nodes:
@@ -274,7 +266,6 @@ def startServer(mineAddr):
     while 1:
         start = time.time()
         bestHeight = bc.getBestHeight()
-        print("Height time = %f" % (time.time() - start))
         # generate empty blocks to seed the miners' wallets
         if bestHeight < 5:
             new_block = miner.mine_block()
@@ -283,19 +274,35 @@ def startServer(mineAddr):
         # across the network (randomly) and eventually fill the mempool.
         # A full mempool will trigger the mining of a new block.
         elif bestHeight < 10:
-            # Unpredictably produce transactions
-            x = random.randint(0, 5e6)
-            if x < 1000:
-                rand_tx = create_random_tx()
-                if rand_tx:
-                    miner.mempool[rand_tx.id] = rand_tx
-                    broadcast_tx(rand_tx)
+            if bestHeight == 5:
+                print("My balance after 5 blocks: %3.3f" % UTXOSet().get_balance(address=miner.address))
+            # Produce a tx every ~2-3 seconds
+            time.sleep(random.random() + 2)
+            rand_tx = create_random_tx()
+            if rand_tx:
+                miner.add_txs([rand_tx])
+                broadcast_tx(rand_tx)
 
             # NOTE: We DO want to mine blocks in the miner's thread
             if len(miner.mempool) >= 2:
+                time.sleep(0.5)
                 print("mempool full, mining txs")
-                miner.mine_transactions()
+                new_block = miner.mine_transactions()
+                broadcast_block(new_block)
         else:
+            balance = UTXOSet().get_balance(address=miner.address)
+            print("My balance: %3.3f" % balance)
+            # pubKeyHash = base58.decode(miner.address)[1:-4]
+            # print("My unspent outputs from UTXOSet:")
+            # for txOutput in UTXOSet().findUTXO(pubKeyHash):
+            #     print(txOutput.toDict())
+            #
+            # print("My unspent outputs from BlockExplorer:")
+            # for txId, txOutputs in BlockExplorer().findUTXO().items():
+            #     for txOutput in txOutputs:
+            #         if txOutput.isLockedWithKey(pubKeyHash):
+            #             print("TXID: %s" % txId.hex())
+            #             print(txOutput.toDict())
             sr.stop()
             break
 

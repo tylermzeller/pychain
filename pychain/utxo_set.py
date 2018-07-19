@@ -1,3 +1,4 @@
+import pychain.base58 as base58
 import pychain.transaction_output as txout
 import pychain.util as util
 
@@ -28,7 +29,7 @@ class UTXOSet:
                 if not tx.isCoinbase():
                     # for each input, remove the output that it spends from the UTXO set
                     for txInput in tx.vin:
-                        txOutputs = util.decodeMsg(s.get(txInput.txId), decoder=txout.decodeTXOutput)
+                        txOutputs = util.decodeMsg(s.get(txInput.txId))
                         updatedOutputs = [txOutput for txOutput in txOutputs if txOutput[b'idx'] != txInput.outIdx]
 
                         if len(updatedOutputs) == 0:
@@ -49,10 +50,13 @@ class UTXOSet:
             unspentOutputs = util.decodeMsg(encodedOutputs, decoder=txout.decodeTXOutput)
             for txOutput in unspentOutputs:
                 if txOutput.isLockedWithKey(pubKeyHash) and accumulated < amount:
-                    accumulated += txOutput.value
                     if txId not in outputDict:
                         outputDict[txId] = {}
-                    outputDict[txId][txOutput.idx] = txOutput
+                    if txOutput.idx in outputDict[txId]:
+                        print("Collision! TXOutput already accounted for.")
+                    else:
+                        outputDict[txId][txOutput.idx] = txOutput
+                        accumulated += txOutput.value
         return accumulated, outputDict
 
     def findUTXO(self, pubKeyHash):
@@ -62,3 +66,10 @@ class UTXOSet:
             UTXO.extend([txOutput for txOutput in unspentOutputs if txOutput.isLockedWithKey(pubKeyHash)])
 
         return UTXO
+
+    def get_balance(self, address=b'', pubKeyHash=b''):
+        if address and isinstance(address, bytes):
+            pubKeyHash = base58.decode(address)[1:-4]
+        elif not pubKeyHash:
+            raise ValueError("Must provide address or pubKeyHash to find balance")
+        return sum([out.value for out in self.findUTXO(pubKeyHash)])

@@ -4,7 +4,7 @@ from pychain.database_manager import DBManager
 
 class BlockchainIterator:
     def __init__(self, currentHash=b''):
-        self.blocks_db = db_manager.DBManager().get('blocks')
+        self.blocks_db = DBManager().get('blocks')
         if not currentHash:
             currentHash = self.blocks_db.get(b'l')
         self.currentHash = currentHash
@@ -21,6 +21,8 @@ class BlockchainIterator:
 class Blockchain:
     def __init__(self):
         self.blocks_db = DBManager().get('blocks')
+        # NOTE: why like this? Because it's easy to get the int back out
+        # with int(get(b'h'))
 
     def getBlock(self, hash):
         if not self.blocks_db.exists(hash):
@@ -38,14 +40,22 @@ class Blockchain:
         if lastBlock:
             if blk.height > lastBlock.height:
                 self.blocks_db.put(b'l', blk.hash)
+                self.blocks_db.put(b'h', str(blk.height).encode())
         else:
             self.blocks_db.put(b'l', blk.hash)
+            self.blocks_db.put(b'h', str(blk.height).encode())
 
     def getBestHeight(self):
-        lastBlock = self.getTip()
-        if not lastBlock:
+        if not self.blocks_db.exists(b'h'):
             return -1
-        return lastBlock.height
+        return int(self.blocks_db.get(b'h'))
+
+        # NOTE: [Keep for reference] This is slow!
+        # I suspect it's my method of deserializing
+        # lastBlock = self.getTip()
+        # if not lastBlock:
+        #     return -1
+        # return lastBlock.height
 
     def getBlockHashes(self):
         return [block.hash for block in self.iter_blocks()]

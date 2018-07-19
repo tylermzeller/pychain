@@ -6,6 +6,7 @@ import pychain.network as network
 import pychain.util as util
 
 from pychain.blockchain import Blockchain
+from pychain.block_explorer import BlockExplorer
 from pychain.utxo_set import UTXOSet
 from pychain.wallet_manager import WalletManager
 
@@ -16,7 +17,7 @@ import random
 def createWallet():
     wm = WalletManager()
     w = wm.create_wallet()
-    newAddress = util.toStr(w.getAddress())
+    newAddress = util.toStr(w.get_address())
     print("New address: %s" % newAddress)
     return newAddress
 
@@ -31,21 +32,21 @@ def listAddresses():
         print(util.toStr(address))
 
 def printChain():
-    for i, block in enumerate(Blockchain().iter_blocks()):
+    for i, block in enumerate(BlockExplorer().iter_blocks()):
         proof = pow.ProofOfWork(block)
         if not proof.validate():
             print("Error! This block could not be validated")
         #print(json.dumps(block.toDict(), indent=2))
         print(block.hash.hex())
-        for tx in block.transactions:
-            print(json.dumps(tx.toDict(), indent=2))
+        # for tx in block.transactions:
+        #     print(json.dumps(tx.toDict(), indent=2))
 
 def newBlockchain(address):
     if not wallet.validateAddress(address.encode()):
         print("Error: Address is not valid")
         return
 
-    Blockchain().mineBlock([transaction.newCoinbaseTX(address)])
+    Blockchain().mineBlock([transaction.new_coinbase_tx(address)])
     UTXOSet().reindex()
     print("New blockchain created")
 
@@ -75,7 +76,7 @@ def send(frum, to, amount):
     UTXOSet().reindex()
     tx = transaction.newUTXOTransaction(frum.encode(), to.encode(), amount)
     if tx:
-        coinbase = transaction.newCoinbaseTX(frum.encode())
+        coinbase = transaction.new_coinbase_tx(frum.encode())
         newBlock = Blockchain().mineBlock([coinbase, tx])
         UTXOSet().update(newBlock)
         print("Send success!")

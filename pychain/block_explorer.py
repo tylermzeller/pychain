@@ -1,10 +1,8 @@
 import pychain.blockchain as blockchain
-import pychain.utxo_set as utxo_set
 
 class BlockExplorer:
     def __init__(self):
         self.bc = blockchain.Blockchain()
-        self.us = utxo_set.UTXOSet()
 
     def iter_blocks(self):
         chainIterator = self.bc.iterator()
@@ -61,10 +59,3 @@ class BlockExplorer:
     # hashed by the previous transactions' IDs
     def getPrevTransactions(self, tx):
         return self.findTransactions([vin.txId for vin in tx.vin])
-
-    def get_balance(self, address=b'', pubKeyHash=b''):
-        if address and :
-            pubKeyHash = base58.decode(address)[1:-4]
-        elif not pubKeyHash:
-            raise ValueError("Must provide address or pubKeyHash to find balance")
-        balance = sum([out.value for out in us.findUTXO(pubKeyHash)])
