@@ -4,6 +4,8 @@ import sys
 import msgpack
 from struct import pack
 
+addressChecksumLength = 4
+
 def int64ToBinary(i):
     # TODO: error handling
     # >q means big endian, long long (int64)
@@ -17,6 +19,12 @@ def sha256(data):
 
 def ripemd160(data):
     return hashData(hashlib.new('ripemd160'), data)
+
+def hashPubKey(publicKey):
+    return ripemd160(sha256(publicKey.to_string()))
+
+def checksum(payload):
+    return sha256(sha256(payload))[:addressChecksumLength]
 
 def hashData(hashObj, data):
     hashObj.update(data)

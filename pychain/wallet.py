@@ -1,11 +1,13 @@
 import pychain.base58 as base58
 
-from pychain.util import sha256, ripemd160, intToBytes
+from pychain.transaction import Transaction
+from pychain.transaction_input import TXInput
+from pychain.transaction_output import TXOutput, OutputDict
+from pychain.util import hashPubKey, checksum, intToBytes
 
 import shelve
 from ecdsa import SigningKey, VerifyingKey, SECP256k1
 
-addressChecksumLength = 4
 default_fee = 0.1
 VERSION = b'\x00'
 
@@ -13,12 +15,6 @@ def newKeyPair():
     priv = SigningKey.generate(curve=SECP256k1)
     pub = priv.get_verifying_key()
     return priv, pub
-
-def hashPubKey(publicKey):
-    return ripemd160(sha256(publicKey.to_string()))
-
-def checksum(payload):
-    return sha256(sha256(payload))[:addressChecksumLength]
 
 def validateAddress(address):
     pubKeyHash = base58.decode(address)
@@ -36,7 +32,7 @@ class Wallet:
         else:
             self.privateKey, self.publicKey = privKey, pubKey
 
-    def getAddress(self):
+    def get_address(self):
         pubKeyHash = hashPubKey(self.publicKey)
         versionedPayload = VERSION + pubKeyHash
         fullPayload = versionedPayload + checksum(versionedPayload)
@@ -46,16 +42,17 @@ class Wallet:
         pubKeyHash = hashPubKey(self.publicKey)
         amountWithFee = amount + fee
         acc, validOutputs = utxoSet.findSpendableOutputs(pubKeyHash, amountWithFee)
+        print('Accumulated: %3.3f' % acc)
 
         if acc < amountWithFee:
             print('Not enough funds!')
             return None
 
-        inputs = [TXInput(txId, outIdx, pubKey=w.publicKey) for txId in validOutputs for outIdx in validOutputs[txId]]
+        inputs = [TXInput(txId, outIdx, pubKey=self.publicKey) for txId in validOutputs for outIdx in validOutputs[txId]]
         outDict = OutputDict()
         outDict.append(TXOutput(amount, address=to))
         if acc > amountWithFee:
-            outDict.append(TXOutput(acc - amountWithFee, address=frum))
+            outDict.append(TXOutput(acc - amountWithFee, address=self.get_address()))
 
         tx = Transaction(inputs, outDict)
         # NOTE: for testing only
@@ -76,14 +73,14 @@ class Wallet:
         # inputs have no signatures or pubkeys
         trimCopy = tx.trimmedCopy()
 
-        for i, txInput in enumerate(self.vin):
+        for i, txInput in enumerate(tx.vin):
             inCopy = trimCopy.vin[i]
             refTxOutput = prevTxs[txInput.txId][txInput.outIdx]
             inCopy.signature = None
             inCopy.pubKey = refTxOutput.pubKeyHash
             trimCopy.setId()
             inCopy.pubKey = None
-            txInput.signature = self.privKey.sign(trimCopy.id)
+            txInput.signature = self.privateKey.sign(trimCopy.id)
 
 def encodeWallet(w):
     if isinstance(w, Wallet):

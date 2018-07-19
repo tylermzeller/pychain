@@ -10,7 +10,7 @@ class WalletManager:
     # creates a new wallet and saves it to the database
     def create_wallet(self):
         w = wallet.Wallet()
-        address = w.getAddress()
+        address = w.get_address()
         encoded_wallet = util.encodeMsg(wallet.encodeWallet(w))
         self.wallets_db.put(address, encoded_wallet)
         return w

@@ -1,13 +1,11 @@
 import pychain.base58 as base58
 
-from pychain.transaction_input import TXInput, encodeTXInput, encodeTXInput
+from pychain.transaction_input import TXInput, encodeTXInput, decodeTXInput
 from pychain.transaction_output import TXOutput, OutputDict, encodeTXOutput, decodeTXOutput
 from pychain.util import sha256
 
 from pickle import dumps
-from random import randint
 
-subsidy = 50
 default_fee = 0.1
 
 class Transaction:
