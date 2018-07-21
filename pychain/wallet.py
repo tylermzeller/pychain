@@ -42,7 +42,6 @@ class Wallet:
         pubKeyHash = hashPubKey(self.publicKey)
         amountWithFee = amount + fee
         acc, validOutputs = utxoSet.findSpendableOutputs(pubKeyHash, amountWithFee)
-        print('Accumulated: %3.3f' % acc)
 
         if acc < amountWithFee:
             print('Not enough funds!')

@@ -1,6 +1,7 @@
 import pychain.base58 as base58
 import pychain.miner as miner
 import pychain.p2p_interface as p2p
+import pychain.pow as pow
 import pychain.transaction as transaction
 
 from pychain.async_server import AsyncServer
@@ -44,7 +45,7 @@ def sendAddr(address):
     sendPayload(address, command, addresses)
 
 def sendBlock(address, block):
-    print("Sending block %s to %s" % (block.hash.hex(), address))
+    print("Sending block %s to %s" % (block.hash.hex()[:14], address))
     command = b'block'
     blck = p2p.block(nodeAddress, encodeBlock(block))
     sendPayload(address, command, blck)
@@ -68,7 +69,7 @@ def sendGetData(address, typ, id):
     sendPayload(address, command, getdata)
 
 def sendTX(address, tx):
-    print("Sending tx %s to %s" % (tx.id.hex(), address))
+    print("Sending tx %s to %s" % (tx.id.hex()[:7], address))
     command = b'tx'
     x = p2p.tx(nodeAddress, transaction.encodeTX(tx))
     sendPayload(address, command, x)
@@ -109,7 +110,7 @@ def handleBlock(msg):
         return
 
     Blockchain().addBlock(block)
-    print("Added block %s" % block.hash.hex())
+    print("Added block %s" % block.hash.hex()[:14])
 
     if len(blocksInTransit[addrFrom]) > 0:
         sendGetData(addrFrom, b'block', blocksInTransit[addrFrom][0])
@@ -217,7 +218,6 @@ def create_random_tx():
     while len(addresses) < 10:
         w = wm.create_wallet()
         addresses.append(w.get_address())
-        print("Creating a new wallet %s" % toStr(w.get_address()))
 
     random.shuffle(addresses)
     frum = b''
@@ -236,10 +236,19 @@ def create_random_tx():
     to = addresses[0]
     if to == frum: to = addresses[1]
 
-    print("Making a random tx of %2.3f from %s to %s" % (balance / 2, toStr(frum), toStr(to)))
     sender_wallet = wm.get_wallet(frum)
     tx = sender_wallet.create_tx(to, balance / 2, us)
+    print("Making a random tx of %2.3f from %s to %s" % (balance / 2, toStr(frum), toStr(to)))
+    print("txID: %s" % tx.id.hex()[:7])
     return tx
+
+def print_balances():
+    balance = UTXOSet().get_balance(address=miner.address)
+    print("My balance: %3.3f" % balance)
+    addresses = WalletManager().get_addresses()
+    for address in addresses:
+        if address == miner.address: continue
+        print("Balance of %s: %3.3f" % (toStr(address), UTXOSet().get_balance(address=address)))
 
 def startServer(mineAddr):
     global knownNodes, miner
@@ -285,13 +294,24 @@ def startServer(mineAddr):
 
             # NOTE: We DO want to mine blocks in the miner's thread
             if len(miner.mempool) >= 2:
-                time.sleep(0.5)
-                print("mempool full, mining txs")
+                # HACK: For testing, gives the other nodes a chance to
+                # win the next block
+                time.sleep(1.5)
                 new_block = miner.mine_transactions()
                 broadcast_block(new_block)
+                print_balances()
         else:
-            balance = UTXOSet().get_balance(address=miner.address)
-            print("My balance: %3.3f" % balance)
+            pubKeyHash = base58.decode(miner.address)[1:-4]
+            for i, block in enumerate(BlockExplorer().iter_blocks()):
+                proof = pow.ProofOfWork(block)
+                if not proof.validate():
+                    print("Error! This block could not be validated")
+                #print(json.dumps(block.toDict(), indent=2)
+                mined_block = ' no'
+                for tx in block.transactions:
+                    if tx.isCoinbase() and tx.outDict[0].isLockedWithKey(pubKeyHash):
+                        mined_block = ' yes'
+                print(block.hash.hex()[:14] + mined_block)
             # pubKeyHash = base58.decode(miner.address)[1:-4]
             # print("My unspent outputs from UTXOSet:")
             # for txOutput in UTXOSet().findUTXO(pubKeyHash):

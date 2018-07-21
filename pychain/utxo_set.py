@@ -19,6 +19,7 @@ class UTXOSet:
         with self.utxos_db.write_batch() as wb:
             for txId, txOutputs in UTXO.items():
                 # add them to the cache
+                txOutputs = list(txOutputs)
                 encodedTXOutputs = util.encodeMsg(txOutputs, encoder=txout.encodeTXOutput)
                 wb.put(txId, encodedTXOutputs)
 
@@ -59,17 +60,22 @@ class UTXOSet:
                         accumulated += txOutput.value
         return accumulated, outputDict
 
-    def findUTXO(self, pubKeyHash):
-        UTXO = []
-        for encodedOutputs in self.utxos_db.iter_values():
-            unspentOutputs = util.decodeMsg(encodedOutputs, decoder=txout.decodeTXOutput)
-            UTXO.extend([txOutput for txOutput in unspentOutputs if txOutput.isLockedWithKey(pubKeyHash)])
+    def find_utxo(self, pub_key_hash):
+        utxo = []
+        for encoded_outs in self.utxos_db.iter_values():
+            unspent_outs = util.decodeMsg(encoded_outs, decoder=txout.decodeTXOutput)
+            utxo.extend([tx_out for tx_out in unspent_outs if tx_out.isLockedWithKey(pub_key_hash)])
+        return utxo
 
-        return UTXO
+    def get_unspent_outputs(self, tx_id):
+        encoded_outs = self.utxos_db.get(tx_id)
+        if encoded_outs == b'':
+            return []
+        return util.decodeMsg(encoded_outs, decoder=txout.decodeTXOutput)
 
-    def get_balance(self, address=b'', pubKeyHash=b''):
+    def get_balance(self, address=b'', pub_key_hash=b''):
         if address and isinstance(address, bytes):
-            pubKeyHash = base58.decode(address)[1:-4]
+            pub_key_hash = base58.decode(address)[1:-4]
         elif not pubKeyHash:
             raise ValueError("Must provide address or pubKeyHash to find balance")
-        return sum([out.value for out in self.findUTXO(pubKeyHash)])
+        return sum([out.value for out in self.find_utxo(pub_key_hash)])

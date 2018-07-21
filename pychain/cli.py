@@ -56,9 +56,8 @@ def getBalance(address):
         return None
 
     us = UTXOSet()
-    pubKeyHash = base58.decode(address.encode())[1:-4]
-    return sum([out.value for out in us.findUTXO(pubKeyHash)])
-
+    return us.get_balance(address=address.encode())
+    
 def printBalance(address):
     balance = getBalance(address)
     if balance:
@@ -91,7 +90,6 @@ def startServer(minerAddress):
         print("No or incorrect mining address. This node is not mining and will not receive rewards.")
 
     network.startServer(minerAddress.encode())
-    printChain()
 
 def run():
     parser = argparse.ArgumentParser(description='Process blockchain commands')

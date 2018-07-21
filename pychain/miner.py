@@ -4,6 +4,7 @@ import pychain.block_explorer as block_explorer
 import pychain.transaction as transaction
 import pychain.transaction_input as transaction_input
 import pychain.transaction_output as transaction_output
+import pychain.util as util
 import pychain.utxo_set as utxo_set
 
 from random import randint
@@ -26,12 +27,12 @@ class Miner:
                     continue
 
                 if not self.verify(tx):
-                    print("Could not verify tx %s" % tx.id.hex())
+                    print("Could not verify tx %s" % tx.id.hex()[:7])
                     print(tx.toDict())
                     continue
 
                 self.mempool[tx.id] = tx
-                print("Added tx %s" % tx.id.hex())
+                print("Added tx %s" % tx.id.hex()[:7])
 
     def get_txs(self):
         with self.mempool_mutex:
@@ -41,7 +42,7 @@ class Miner:
         with self.mempool_mutex:
             for tx in txs:
                 if tx.id in self.mempool:
-                    print("deleting tx %s from mempool" % tx.id.hex())
+                    # print("deleting tx %s" % tx.id.hex())
                     del self.mempool[tx.id]
 
     # Returns a Transaction instance
@@ -72,7 +73,7 @@ class Miner:
                 return False
                 #raise Exception("Prev TX for TXInput %s not found" % txInput.txId.hex())
             if not prevTxs[txInput.txId]:
-                print("Could not find tx %s" % txInput.txId.hex())
+                print("Could not find tx %s" % txInput.txId.hex()[:7])
                 return False
                 # print(self.bx.findTransaction(txInput.txId).toDict())
                 # raise Exception("Invalid previous tx.")
@@ -118,6 +119,49 @@ class Miner:
         outputs = sum([vout.value for tx in txs for vout in tx.outDict.values()])
         return inputs - outputs
 
+    def verify_transactions(self, transactions):
+        us = utxo_set.UTXOSet()
+        verified_txs = []
+        unspent_outs = {}
+
+        # verify ea. tx
+        for tx in transactions:
+            # verify cryptographic signatures
+            if not self.verify(tx):
+                print("Error verifying tx %s" % tx.id.hex()[:7])
+                # print(tx)
+                continue # NOT VERIFIED
+
+            if not tx.isCoinbase():
+                verified = True
+                # verify no outputs spent more than once
+                for tx_input in tx.vin:
+                    # NOTE: We are keeping a map of txIds -> unspent outputs
+                    # During iteration, this map is updated so that two txMsg
+                    # in the same block can't spend the same outputs
+                    if not tx_input.txId in unspent_outs:
+                        # for this txId, add a map of outIdx -> tx_output
+                        unspent_outs[tx_input.txId] = { tx_out.idx: tx_out for tx_out in us.get_unspent_outputs(tx_input.txId) }
+
+                    # NOTE: we use the pubkey hash of the input to verify it can spend
+                    # it's referenced output
+                    pub_key_hash = util.hashPubKey(tx_input.pubKey)
+
+                    # we are good, this output is unspent
+                    if tx_input.outIdx in unspent_outs[tx_input.txId] and unspent_outs[tx_input.txId][tx_input.outIdx].isLockedWithKey(pub_key_hash):
+                        del unspent_outs[tx_input.txId][tx_input.outIdx]
+                    else:
+                        # this output appears to be spent already
+                        # or it is not authorized to spend the output
+                        verified = False
+                        break
+
+                if not verified:
+                    continue # NOT VERIFIED
+
+            verified_txs.append(tx)
+        return verified_txs
+
     def mine_block(self, transactions=[]):
         if len(self.address) == 0:
             raise RuntimeError("Error: Miners without addresses cannot mine blocks.")
@@ -127,12 +171,12 @@ class Miner:
 
         found_coinbase = False
         for tx in transactions:
-            if not self.verify(tx):
-                print("Error verifying transactions")
-                print(tx)
-                return
             if tx.isCoinbase():
-                found_coinbase = True
+                # we need to ensure there is exactly 1 coinbase in a batch of txs
+                if not found_coinbase:
+                    found_coinbase = True
+                else:
+                    raise ValueError("Error: Multiple coinbases found.")
 
         if not found_coinbase:
             raise ValueError("Error: Coinbase must be included in list of txs to mine block.")
@@ -140,14 +184,15 @@ class Miner:
         last_block = self.bc.getTip()
 
         if not last_block:
-            print("\nEmpty blockchain. Creating genesis.")
+            print("\nEmpty blockchain. Creating genesis . . .")
             if len(transactions) != 1:
                 raise ValueError("Error: should be a single tx in the genesis block. Instead found %d" % len(transactions))
             new_block = block.newGenesisBlock(transactions[0])
         else:
+            print("\nMining new block . . .")
             new_block = block.Block(transactions, last_block.hash, last_block.height + 1)
 
-        print("Mined block %s" % new_block.hash.hex())
+        print("Mined block %s" % new_block.hash.hex()[:14])
 
         self.bc.addBlock(new_block)
         utxo_set.UTXOSet().reindex()
@@ -157,8 +202,9 @@ class Miner:
         if len(self.address) == 0:
             raise RuntimeError("Error: Miners without addresses cannot mine blocks.")
 
-        print("Attempting to mine new block")
-        txs = self.get_txs()
+        all_txs = self.get_txs()
+        txs = self.verify_transactions(all_txs)
+        print("Attempting to mine %d txs" % len(txs))
 
         if len(txs) == 0:
             print("All transactions were invalid! Waiting for more...")
@@ -170,7 +216,7 @@ class Miner:
         txs.append(cb)
         new_block = self.mine_block(txs)
 
-        self.delete_txs(txs)
+        self.delete_txs(all_txs)
 
         # if len(mempool) > 0:
         #     mine_transactions()
