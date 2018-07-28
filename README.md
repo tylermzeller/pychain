@@ -10,6 +10,10 @@ This repository is for personal experimentation and mainly for fun (you may even
   * Persistence is accomplished using the [Plyvel](https://plyvel.readthedocs.io/en/latest/index.html) library. Previously this was done using [shelve](https://docs.python.org/3/library/shelve.html). Moving from Shelve to Plyvel, we lost the convenience of letting the database handle serialization of blocks, UTXOs, and wallets. However, Plyvel should be a more robust and efficient database, giving us snapshots, sorted iterators, write batches, and more!
   * Public/Private key cryptography (verifying/signing) is accomplished through the [ecdsa](https://github.com/warner/python-ecdsa) library. See their README for security considerations.
   * Blocks only support PTPKH transactions. No scripting. Just locking and unlocking outputs.
+  * P2P testing so far has been limited (only 4 peers, no bad actors).
+  * Since block times are so low, the blockchain will often fork. The network handles this gracefully and always reaches consensus.
+# Tests
+See the [README](./pychain/tests/README.md) in the tests directory
 
 ## Quick Start
 
@@ -23,11 +27,23 @@ $ docker run -it --rm pychain
 ```
 
 ## P2P Network Using Docker-Compose
+It's recommended you use the provided deployment scripts
+```bash
+$ cd scripts
+$ ./deploy_network --num-nodes=3
+```
+
+Alternatively, you can roll your own docker-compose setup.
 ```bash
 $ docker build -t pychain .
-# So far, successful tests have been confirmed with 3 nodes on the network.
+
+# you will need a valid docker-compose.yml file for this to work. You can use the template in this repo as a reference.
 $ docker-compose up --scale p2p=3
 ```
+
+
+## Node CLI
+The following commands can be ran on a single Pychain node.
 
 ### Creating Wallets
 #### Command:

@@ -16,7 +16,6 @@ class AsyncServer(asyncore.dispatcher):
         self.listen(5)
 
     def start(self):
-        print("Starting server thread")
         if self._server_thread is not None:
             return
 
@@ -49,7 +48,6 @@ class AsyncServer(asyncore.dispatcher):
             def handle_read(self):
                 handler_func(self)
 
-        print("Setting read handler")
         self._sock_read_handler = Handler
 
     def handle_accept(self):
@@ -62,5 +60,4 @@ class AsyncServer(asyncore.dispatcher):
             sock.close()
             return
 
-        # print("Incoming connection from %s" % repr(addr))
         self._sock_read_handler(sock)
