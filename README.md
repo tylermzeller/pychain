@@ -77,7 +77,7 @@ Done
 #### Command:
 `print-blockchain`
 ```bash
-$ ./gucci_main.py p
+$ ./gucci_main.py p --full y
 {
   "hash": "000006a4c3c01d76ac261a2cd5c6ac6297b2bd4dc4984bbef91d5d9d624e6e78",
   "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",

@@ -7,6 +7,7 @@ import pychain.util as util
 
 from pychain.blockchain import Blockchain
 from pychain.block_explorer import BlockExplorer
+from pychain.miner import Miner
 from pychain.utxo_set import UTXOSet
 from pychain.wallet_manager import WalletManager
 
@@ -31,23 +32,27 @@ def listAddresses():
     for address in addresses:
         print(util.toStr(address))
 
-def printChain():
+def printChain(full=False):
     for i, block in enumerate(BlockExplorer().iter_blocks()):
         proof = pow.ProofOfWork(block)
         if not proof.validate():
             print("Error! This block could not be validated")
-        #print(json.dumps(block.toDict(), indent=2))
-        print(block.hash.hex())
-        # for tx in block.transactions:
-        #     print(json.dumps(tx.toDict(), indent=2))
+        if full:
+            print(json.dumps(block.toDict(), indent=2))
+        else:
+            print(block.hash.hex())
 
 def newBlockchain(address):
+    if Blockchain().getBestHeight >= 0:
+        print("Error: Blockchain already exists")
+        return
+
     if not wallet.validateAddress(address.encode()):
         print("Error: Address is not valid")
         return
 
-    Blockchain().mineBlock([transaction.new_coinbase_tx(address)])
-    UTXOSet().reindex()
+    miner = Miner(address.encode())
+    miner.mine_block()
     print("New blockchain created")
 
 def getBalance(address):
@@ -57,7 +62,7 @@ def getBalance(address):
 
     us = UTXOSet()
     return us.get_balance(address=address.encode())
-    
+
 def printBalance(address):
     balance = getBalance(address)
     if balance:
@@ -72,12 +77,12 @@ def send(frum, to, amount):
         print("Error: Recipient address is not valid")
         return
 
-    UTXOSet().reindex()
-    tx = transaction.newUTXOTransaction(frum.encode(), to.encode(), amount)
+    w = WalletManager().get_wallet(frum.encode())
+    tx = w.create_tx(to.encode(), amount, UTXOSet())
     if tx:
-        coinbase = transaction.new_coinbase_tx(frum.encode())
-        newBlock = Blockchain().mineBlock([coinbase, tx])
-        UTXOSet().update(newBlock)
+        miner = Miner(frum.encode())
+        coinbase = miner.new_coinbase_tx()
+        miner.mine_block([coinbase, tx])
         print("Send success!")
 
 def startServer(minerAddress):
@@ -98,12 +103,17 @@ def run():
     parser.add_argument('--from', dest='frum')
     parser.add_argument('--to', dest='to')
     parser.add_argument('--amount', dest='amount', type=int)
+    parser.add_argument('--full', dest='full')
     args = parser.parse_args()
 
     command = args.command.lower()
 
     if util.isSubstringOf(command, 'print-blockchain'):
-        printChain()
+        full = False
+        if not args.getattr('full'):
+            args.setattr('full', 'false')
+        full = args.full.lower() in ['y', 'true', 't', '1']
+        printChain(full)
     elif util.isSubstringOf(command, 'init-blockchain'):
         newBlockchain(args.address)
     elif util.isSubstringOf(command, 'get-balance'):
